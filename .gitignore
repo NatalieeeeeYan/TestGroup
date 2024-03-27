@@ -1,0 +1,7 @@
+*.zip
+*.log
+Pj1/SoftwareTestingDemo.zip
+.history/
+.vscode/
+.idea/
+.DS_Store/
