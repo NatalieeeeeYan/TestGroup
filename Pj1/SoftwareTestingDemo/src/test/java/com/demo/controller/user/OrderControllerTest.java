@@ -1,7 +1,5 @@
 package com.demo.controller.user;
 
-import com.demo.controller.user.OrderController;
-import com.demo.dao.VenueDao;
 import com.demo.entity.User;
 import com.demo.entity.Venue;
 import com.demo.entity.Order;
@@ -15,25 +13,21 @@ import org.junit.jupiter.api.Test;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.MockitoAnnotations;
-import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.ui.Model;
-import org.springframework.web.servlet.ModelAndView;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
-import java.time.LocalDateTime;
 import java.time.format.DateTimeParseException;
 import java.util.ArrayList;
 import java.util.List;
 
+import static com.demo.service.OrderService.STATE_FINISH;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.Mockito.*;
 
-
-// 基于黑盒测试的等价类划分、边界值分析和白盒测试的语句覆盖、判定覆盖等测试用例设计技术构造测试用例；需要考虑测试完整性并减少测试用例冗余。
 public class OrderControllerTest {
 
     @InjectMocks
@@ -115,6 +109,18 @@ public class OrderControllerTest {
         assertEquals("order_place", result); // 验证返回的视图名称是否正确
     }
 
+    // venueId不存在
+    @Test
+    void testOrderPlaceInvalidVenueID() {
+        // 模拟venueService.findByVenueID方法
+        when(venueService.findByVenueID(1)).thenReturn(null);
+
+        // 调用被测试方法
+        String result = orderController.order_place(model, 1);
+        verify(model).addAttribute(eq("venue"), eq(null)); // 验证模型数据是否正确添加
+        assertEquals("order_place", result); // 验证返回的视图名称是否正确
+    }
+
     // 正常返回
     @Test
     void testOrderPlace2() {
@@ -164,6 +170,17 @@ public class OrderControllerTest {
         });
     }
 
+    // page超出总页数（当前存在错误）
+    @Test
+    void testOrderListPageExceedTotal() {
+        when(orderService.findUserOrder(eq("test"), any(Pageable.class))).thenReturn(null);
+        try {
+            orderController.order_list(2, request);
+        } catch (Exception e) {
+            assertEquals("Cannot invoke \"org.springframework.data.domain.Page.getContent()\" because \"page1\" is null", e.getMessage()); // 验证是否抛出异常
+        }
+    }
+
     // 正常返回
     @Test
     void testAddOrder() throws Exception {
@@ -189,13 +206,16 @@ public class OrderControllerTest {
         });
     }
 
-//    // hours为负数（当前存在错误）
-//    @Test
-//    void testAddOrderNegativeHours() {
-//        assertThrows(IllegalArgumentException.class, () -> {
-//            orderController.addOrder("test", "", "2021-01-01 12:00", -1, request, mock(HttpServletResponse.class));
-//        });
-//    }
+    // hours为负数（当前存在错误）
+    @Test
+    void testAddOrderNegativeHours() {
+        try {
+            orderController.addOrder("test", "", "2024-01-01 12:00", -1, request, mock(HttpServletResponse.class));
+            System.out.println("No problem");
+        } catch (Exception e) {
+            assertEquals("hours不能为负数", e.getMessage()); // 验证是否抛出异常
+        }
+    }
 
     // 未登录
     @Test
@@ -205,7 +225,7 @@ public class OrderControllerTest {
 
         // 调用被测试方法
         try {
-            orderController.addOrder("test", "", "2021-01-01 12:00", 1, request, mock(HttpServletResponse.class));
+            orderController.addOrder("test", "", "2024-01-01 12:00", 1, request, mock(HttpServletResponse.class));
         } catch (Exception e) {
             assertEquals("请登录！", e.getMessage()); // 验证是否抛出异常
         }
@@ -214,15 +234,38 @@ public class OrderControllerTest {
     // venueName不存在（当前存在错误）
     @Test
     void testAddOrderInvalidVenueName() {
-        // 模拟orderService.submit方法
-        doThrow(new RuntimeException("场馆不存在")).when(orderService).submit(eq("test"), any(), eq(1), eq("test"));
-
         // 调用被测试方法
         try {
-            orderController.addOrder("test", "", "2021-01-01 12:00", 1, request, mock(HttpServletResponse.class));
+            orderController.addOrder("test", "", "2024-01-01 12:00", 1, request, mock(HttpServletResponse.class));
             System.out.println("No problem");
         } catch (Exception e) {
             assertEquals("场馆不存在", e.getMessage()); // 验证是否抛出异常
+        }
+    }
+
+    // startTime晚于当前时间（当前存在错误）
+    @Test
+    void testAddOrderInvalidTime2() {
+        // 调用被测试方法
+        try {
+            orderController.addOrder("test", "", "2023-01-01 12:00", 1, request, mock(HttpServletResponse.class));
+            System.out.println("No problem");
+        } catch (Exception e) {
+            assertEquals("时间错误", e.getMessage()); // 验证是否抛出异常
+        }
+    }
+
+    // 指定场馆当前已有预约订单（当前存在错误）
+    @Test
+    void testAddOrderInvalidTime3() {
+        doNothing().when(orderService).submit(eq("test"), any(), eq(1), eq("test"));
+
+        try {
+            orderController.addOrder("test", "", "2024-01-01 12:00", 1, request, mock(HttpServletResponse.class));
+            orderController.addOrder("test", "", "2024-01-01 12:00", 1, request, mock(HttpServletResponse.class));
+            System.out.println("No problem");
+        } catch (Exception e) {
+            assertEquals("时间错误", e.getMessage()); // 验证是否抛出异常
         }
     }
 
@@ -239,7 +282,7 @@ public class OrderControllerTest {
         verify(orderService).finishOrder(1); // 验证是否调用了orderService.finishOrder方法
     }
 
-    // orderID不存在（当前存在错误）
+    // orderID不存在
     @Test
     void testFinishOrderInvalidOrderID() {
         // 模拟orderService.finishOrder方法
@@ -248,8 +291,23 @@ public class OrderControllerTest {
         // 调用被测试方法
         try {
             orderController.finishOrder(1);
+            System.out.println("No problem");
         } catch (Exception e) {
             assertEquals("订单不存在", e.getMessage()); // 验证是否抛出异常
+        }
+    }
+
+    // orderId对应的订单已经结束（当前存在错误）
+    @Test
+    void testFinishOrderInvalidOrderID2() {
+        Order order = new Order();
+        order.setState(STATE_FINISH);
+        when(orderService.findById(1)).thenReturn(order);
+        try {
+            orderController.finishOrder(1);
+            System.out.println("No problem");
+        } catch (Exception e) {
+            assertEquals("订单已结束", e.getMessage()); // 验证是否抛出异常
         }
     }
 
@@ -285,31 +343,32 @@ public class OrderControllerTest {
             String result = orderController.editOrder(model, 1);
             assertNotNull(model.getAttribute("order"));
             assertEquals("order_edit", result);
+            System.out.println("No problem");
         } catch (Exception e) {
             assertEquals("Cannot invoke \"com.demo.entity.Order.getVenueID()\" because \"order\" is null", e.getMessage()); // 验证是否抛出异常
         }
     }
 
-//    // venueId不存在（当前存在错误）
-//    @Test
-//    void testEditOrderInvalidVenueID() {
-//        // 模拟orderService.findById方法
-//        Order order = new Order();
-//        order.setVenueID(1);
-//        when(orderService.findById(1)).thenReturn(order);
-//
-//        // 模拟venueService.findByVenueID方法
-//        when(venueService.findByVenueID(1)).thenReturn(null);
-//
-//        // 调用被测试方法
-//        try {
-//            String result = orderController.editOrder(model, 1);
-//            assertNotNull(model.getAttribute("venue"));
-//            assertEquals("order_edit", result);
-//        } catch (Exception e) {
-//            assertEquals("", e.getMessage()); // 验证是否抛出异常
-//        }
-//    }
+    // venueId不存在（当前存在错误）
+    @Test
+    void testEditOrderInvalidVenueID() {
+        // 模拟orderService.findById方法
+        Order order = new Order();
+        order.setVenueID(1);
+        when(orderService.findById(1)).thenReturn(order);
+
+        // 模拟venueService.findByVenueID方法
+        when(venueService.findByVenueID(1)).thenReturn(null);
+
+        // 调用被测试方法
+        try {
+            String result = orderController.editOrder(model, 1);
+            assertNotNull(model.getAttribute("venue"));
+            assertEquals("order_edit", result);
+        } catch (Exception e) {
+            assertEquals("", e.getMessage()); // 验证是否抛出异常
+        }
+    }
 
     // 正常返回
     @Test
@@ -351,23 +410,24 @@ public class OrderControllerTest {
         }
     }
 
-//    // hours为负数（当前存在错误）
-//    @Test
-//    void testModifyOrderNegativeHours() {
-//        assertThrows(IllegalArgumentException.class, () -> {
-//            orderController.modifyOrder("test", "", "2021-01-01 12:00", -1, 1, request, mock(HttpServletResponse.class));
-//        });
-//    }
+    // hours为负数（当前存在错误）
+    @Test
+    void testModifyOrderNegativeHours() {
+        try {
+            orderController.modifyOrder("test", "", "2024-01-01 12:00", -1, 1, request, mock(HttpServletResponse.class));
+            System.out.println("No problem");
+        } catch (Exception e) {
+            assertEquals("hours不能为负数", e.getMessage()); // 验证是否抛出异常
+        }
+    }
 
     // venueName不存在（当前存在错误）
     @Test
     void testModifyOrderInvalidVenueName() {
-        // 模拟orderService.updateOrder方法
-        doThrow(new RuntimeException("场馆不存在")).when(orderService).updateOrder(eq(1), eq("test"), any(), eq(1), eq("test"));
-
+        when(venueService.findByVenueName("test")).thenReturn(null);
         // 调用被测试方法
         try {
-            orderController.modifyOrder("test", "", "2021-01-01 12:00", 1, 1, request, mock(HttpServletResponse.class));
+            orderController.modifyOrder("test", "", "2024-01-01 12:00", 1, 1, request, mock(HttpServletResponse.class));
             System.out.println("No problem");
         } catch (Exception e) {
             assertEquals("场馆不存在", e.getMessage()); // 验证是否抛出异常
@@ -382,10 +442,39 @@ public class OrderControllerTest {
 
         // 调用被测试方法
         try {
-            orderController.modifyOrder("test", "", "2021-01-01 12:00", 1, 1, request, mock(HttpServletResponse.class));
+            orderController.modifyOrder("test", "", "2024-01-01 12:00", 1, 1, request, mock(HttpServletResponse.class));
             System.out.println("No problem");
         } catch (Exception e) {
             assertEquals("订单不存在", e.getMessage()); // 验证是否抛出异常
+        }
+    }
+
+    // startTime晚于当前时间（当前存在错误）
+    @Test
+    void testModifyOrderInvalidTime2() {
+        // 模拟orderService.updateOrder方法
+        doNothing().when(orderService).updateOrder(eq(1), eq("test"), any(), eq(1), eq("test"));
+
+        // 调用被测试方法
+        try {
+            orderController.modifyOrder("test", "", "2023-01-01 12:00", 1, 1, request, mock(HttpServletResponse.class));
+            System.out.println("No problem");
+        } catch (Exception e) {
+            assertEquals("时间错误", e.getMessage()); // 验证是否抛出异常
+        }
+    }
+
+    // 指定场馆当前已有预约订单（当前存在错误）
+    @Test
+    void testModifyOrderInvalidTime3() {
+        doNothing().when(orderService).updateOrder(eq(1), eq("test"), any(), eq(1), eq("test"));
+
+        try {
+            orderController.addOrder("test", "", "2024-01-01 12:00", 1, request, mock(HttpServletResponse.class));
+            orderController.modifyOrder("test", "", "2024-01-01 12:00", 1, 10, request, mock(HttpServletResponse.class));
+            System.out.println("No problem");
+        } catch (Exception e) {
+            assertEquals("时间错误", e.getMessage()); // 验证是否抛出异常
         }
     }
 
