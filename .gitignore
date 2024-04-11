@@ -5,3 +5,6 @@ Pj1/SoftwareTestingDemo.zip
 .vscode/
 .idea/
 .DS_Store/
+
+Pj1/SoftwareTestingDemo/src/main/resources/application.yml
+pj1/SoftwareTestingDemo/target/ 

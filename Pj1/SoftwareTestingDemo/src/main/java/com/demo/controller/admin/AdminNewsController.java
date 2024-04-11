@@ -59,7 +59,7 @@ public class AdminNewsController {
 
     @PostMapping("/modifyNews.do")
     public void modifyNews(int newsID,String title,String content,HttpServletResponse response) throws IOException {
-        News news= newsService.findById(newsID);
+        News news = newsService.findById(newsID);
         news.setTitle(title);
         news.setContent(content);
         news.setTime(LocalDateTime.now());
