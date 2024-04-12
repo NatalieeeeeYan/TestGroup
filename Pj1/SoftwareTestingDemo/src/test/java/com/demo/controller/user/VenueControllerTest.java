@@ -5,14 +5,11 @@ import com.demo.service.VenueService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
-import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
-import org.springframework.http.MediaType;
-import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -20,16 +17,12 @@ import org.springframework.test.web.servlet.request.MockMvcRequestBuilders;
 import org.springframework.test.web.servlet.result.MockMvcResultMatchers;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.data.domain.*;
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 
-import static org.hamcrest.Matchers.hasSize;
-import static org.hamcrest.Matchers.is;
-import static org.junit.jupiter.api.Assertions.*;
+import static org.hamcrest.Matchers.*;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -65,7 +58,7 @@ class VenueControllerTest {
     }
 
     @Test
-    void testToGymPage_normalVID_returned() throws Exception {
+    void testToGymPage_legalVenueID_returned() throws Exception {
         int venueId = 2;
 
         Venue venue = new Venue(venueId, "Test Venue", "Test Description", 100, "test.jpg", "Test Address", "08:00", "21:00");
@@ -79,8 +72,48 @@ class VenueControllerTest {
     }
 
     @Test
+    void testInvalidVenueID_largeVenueID_badRequest() throws Exception {
+        int invalidVenueID = 9999;
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/venue").param("venueID", String.valueOf(invalidVenueID)))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    void testInvalidVenueID_negativeVenueID_badRequest() throws Exception {
+        int invalidVenueID = -1;
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/venue").param("venueID", String.valueOf(invalidVenueID)))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    void testInvalidVenueID_otherTypeVenueID_badRequest() throws Exception {
+        String invalidVenueID = "invalid";
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/venue").param("venueID", invalidVenueID))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
     void testVenue_list_normalList_returned() throws Exception {
         List<Venue> venueList = Arrays.asList(venue1, venue3);
+        Page<Venue> venuePage = new PageImpl<>(venueList);
+
+        when(venueService.findAll(any(Pageable.class))).thenReturn(venuePage);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/venue_list"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.view().name("venue_list"))
+                .andExpect(MockMvcResultMatchers.model().attributeExists("venue_list"))
+                .andExpect(MockMvcResultMatchers.model().attribute("venue_list", venueList))
+                .andExpect(MockMvcResultMatchers.model().attributeExists("total"))
+                .andExpect(MockMvcResultMatchers.model().attribute("total", 1));
+    }
+
+    @Test
+    void testVenue_list_emptyList_returned() throws Exception {
+        List<Venue> venueList = Arrays.asList();
         Page<Venue> venuePage = new PageImpl<>(venueList);
 
         when(venueService.findAll(any(Pageable.class))).thenReturn(venuePage);
@@ -126,25 +159,38 @@ class VenueControllerTest {
     }
 
     @Test
-    void testGetVenueList_largePageNumber_emptyResponseBody() throws Exception {
-        int page = Integer.MAX_VALUE;
+    void testGetVenueList_LargePageNumber_emptyReturn() throws Exception {
+        // 模拟 VenueService 返回一个空的 Page 对象
+        when(venueService.findAll(any())).thenReturn(new PageImpl<>(Collections.emptyList()));
 
-        mockMvc.perform(
-                MockMvcRequestBuilders.get("/venuelist/getVenueList").param("page", String.valueOf(page))
-                        .contentType(MediaType.APPLICATION_JSON))
+        // 发送 GET 请求，参数为 MAX_INT
+        mockMvc.perform(MockMvcRequestBuilders.get("/venuelist/getVenueList").param("page", String.valueOf(Integer.MAX_VALUE)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().string(""));
+                .andExpect(jsonPath("$.content").isEmpty()) // 验证返回的 Page 内容为空
+                .andExpect(jsonPath("$.totalElements").value(0)); // 验证返回的 Page 的总元素数量为 0
     }
 
     @Test
-    void testGetVenueList_negativeOrZeroPageNumber_throwException() throws Exception {
-        int page = -1;
+    void testGetVenueList_negativeOrZeroPageNumber_badRequest() throws Exception {
+        int invalidPageID = -1;
 
-        assertThrows(Exception.class, () -> {
-            mockMvc.perform(
-                    MockMvcRequestBuilders.get("/venuelist/getVenueList").param("page", String.valueOf(page))
-                            .contentType(MediaType.APPLICATION_JSON)
-            );
-        });
+        mockMvc.perform(MockMvcRequestBuilders.get("/venue").param("venueID", String.valueOf(invalidPageID)))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    void testGetVenueList_otherTypePageNumber_badRequest() throws Exception {
+        String invalidPageID = "invalid";
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/venue").param("venueID", invalidPageID))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
+    }
+
+    @Test
+    void testGetVenueList_negativePageNumber_badRequest() throws Exception {
+        int invalidPageID = -1;
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/venue").param("venueID", String.valueOf(invalidPageID)))
+                .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 }
