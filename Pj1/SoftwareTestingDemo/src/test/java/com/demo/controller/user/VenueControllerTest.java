@@ -2,13 +2,17 @@ package com.demo.controller.user;
 
 import com.demo.entity.Venue;
 import com.demo.service.VenueService;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.runner.RunWith;
+import org.mockito.Mock;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureWebMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.test.mock.mockito.MockBean;
+import org.springframework.http.MediaType;
+import org.springframework.mock.web.MockHttpServletResponse;
 import org.springframework.test.context.junit4.SpringRunner;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -46,43 +50,54 @@ class VenueControllerTest {
     @Autowired
     private MockMvc mockMvc;
 
-//    @Before
-//    public void before() throws Exception {
-//        mockMvc = MockMvcBuilders.webAppContextSetup(this.context).build();
-//    }
-
-    @Test
-    void toGymPage() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(
-                        MockMvcRequestBuilders.get("/venue").param("venueID", "2"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andReturn();
-
-  }
-
-    @Test
-    void testVenueList() throws Exception {
-        MvcResult mvcResult = mockMvc.perform(
-                        MockMvcRequestBuilders.get("/venue_list"))
-                .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(MockMvcResultMatchers.content().string(org.hamcrest.Matchers.not(org.hamcrest.Matchers.emptyString())))
-                .andReturn();
-
-        String responseBody = mvcResult.getResponse().getContentAsString();
-        Document doc = Jsoup.parse(responseBody);
-        // 获取 <body> 标签元素
-        Element body = doc.body();
-        // 检查 <body> 标签中的文本内容不为空
-        assertNotNull(body.text(), "HTML body content is not empty");
-//        System.out.println("返回的指定内容：" + responseBody);
+    Venue venue1,venue3;
+    @BeforeEach
+    void setUp() {
+        // 新建测试venue
+        String venue_name = "venue";
+        String description = "this is description";
+        String picture = "picture";
+        String address = "address";
+        String open_time = "08:00";
+        String close_time = "21:00";
+        venue1 = new Venue(1, venue_name, description, 100, picture, address, open_time, close_time);
+        venue3 = new Venue(3, venue_name, description, 300, picture, address, open_time, close_time);
     }
 
     @Test
-    void testGetVenueList() throws Exception{
+    void testToGymPage_normalVID_returned() throws Exception {
+        int venueId = 2;
+
+        Venue venue = new Venue(venueId, "Test Venue", "Test Description", 100, "test.jpg", "Test Address", "08:00", "21:00");
+        when(venueService.findByVenueID(venueId)).thenReturn(venue);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/venue").param("venueID", String.valueOf(venueId)))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.view().name("venue"))
+                .andExpect(MockMvcResultMatchers.model().attributeExists("venue"))
+                .andExpect(MockMvcResultMatchers.model().attribute("venue", venue));
+    }
+
+    @Test
+    void testVenue_list_normalList_returned() throws Exception {
+        List<Venue> venueList = Arrays.asList(venue1, venue3);
+        Page<Venue> venuePage = new PageImpl<>(venueList);
+
+        when(venueService.findAll(any(Pageable.class))).thenReturn(venuePage);
+
+        mockMvc.perform(MockMvcRequestBuilders.get("/venue_list"))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.view().name("venue_list"))
+                .andExpect(MockMvcResultMatchers.model().attributeExists("venue_list"))
+                .andExpect(MockMvcResultMatchers.model().attribute("venue_list", venueList))
+                .andExpect(MockMvcResultMatchers.model().attributeExists("total"))
+                .andExpect(MockMvcResultMatchers.model().attribute("total", 1));
+    }
+
+    @Test
+    void testGetVenueList_normalPage_returned() throws Exception{
         int page = 1;
-        Venue venue1 = new Venue(1, "venue1", "description1", 100, "picture1", "address1", "08:00", "21:00");
-        Venue venue2 = new Venue(3, "venue3", "description3", 300, "picture3", "address3", "08:30", "22:00");
-        List<Venue> venueList = Arrays.asList(venue1, venue2);
+        List<Venue> venueList = Arrays.asList(venue1, venue3);
         Pageable pageable = PageRequest.of(page-1, 5, Sort.by("venueID").ascending());
 
         when(venueService.findAll(any())).thenReturn(new PageImpl<>(venueList, pageable, 2));
@@ -92,21 +107,44 @@ class VenueControllerTest {
                 .andExpect(MockMvcResultMatchers.status().isOk())
                 .andExpect(jsonPath("$.content", hasSize(2)))
                 .andExpect(jsonPath("$.content[0].venueID", is(1)))
-                .andExpect(jsonPath("$.content[0].venueName", is("venue1")))
-                .andExpect(jsonPath("$.content[0].description", is("description1")))
+                .andExpect(jsonPath("$.content[0].venueName", is("venue")))
+                .andExpect(jsonPath("$.content[0].description", is("this is description")))
                 .andExpect(jsonPath("$.content[0].price", is(100)))
-                .andExpect(jsonPath("$.content[0].picture", is("picture1")))
-                .andExpect(jsonPath("$.content[0].address", is("address1")))
+                .andExpect(jsonPath("$.content[0].picture", is("picture")))
+                .andExpect(jsonPath("$.content[0].address", is("address")))
                 .andExpect(jsonPath("$.content[0].open_time", is("08:00")))
                 .andExpect(jsonPath("$.content[0].close_time", is("21:00")))
                 .andExpect(jsonPath("$.content[1].venueID", is(3)))
-                .andExpect(jsonPath("$.content[1].venueName", is("venue3")))
-                .andExpect(jsonPath("$.content[1].description", is("description3")))
+                .andExpect(jsonPath("$.content[1].venueName", is("venue")))
+                .andExpect(jsonPath("$.content[1].description", is("this is description")))
                 .andExpect(jsonPath("$.content[1].price", is(300)))
-                .andExpect(jsonPath("$.content[1].picture", is("picture3")))
-                .andExpect(jsonPath("$.content[1].address", is("address3")))
-                .andExpect(jsonPath("$.content[1].open_time", is("08:30")))
-                .andExpect(jsonPath("$.content[1].close_time", is("22:00")))
+                .andExpect(jsonPath("$.content[1].picture", is("picture")))
+                .andExpect(jsonPath("$.content[1].address", is("address")))
+                .andExpect(jsonPath("$.content[1].open_time", is("08:00")))
+                .andExpect(jsonPath("$.content[1].close_time", is("21:00")))
                 .andReturn();
+    }
+
+    @Test
+    void testGetVenueList_largePageNumber_emptyResponseBody() throws Exception {
+        int page = Integer.MAX_VALUE;
+
+        mockMvc.perform(
+                MockMvcRequestBuilders.get("/venuelist/getVenueList").param("page", String.valueOf(page))
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(MockMvcResultMatchers.status().isOk())
+                .andExpect(MockMvcResultMatchers.content().string(""));
+    }
+
+    @Test
+    void testGetVenueList_negativeOrZeroPageNumber_throwException() throws Exception {
+        int page = -1;
+
+        assertThrows(Exception.class, () -> {
+            mockMvc.perform(
+                    MockMvcRequestBuilders.get("/venuelist/getVenueList").param("page", String.valueOf(page))
+                            .contentType(MediaType.APPLICATION_JSON)
+            );
+        });
     }
 }
