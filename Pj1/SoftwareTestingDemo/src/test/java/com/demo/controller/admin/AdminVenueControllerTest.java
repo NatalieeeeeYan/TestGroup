@@ -158,7 +158,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testGetVenueList_emptyList_emptyReturn () throws Exception {
+    void testGetVenueList_emptyList_emptyReturn() throws Exception {
         List<Venue> venues = new ArrayList<>();
         Pageable pageable = PageRequest.of(0, 10, Sort.by("venueID").ascending());
 
@@ -247,7 +247,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_fullVenueInfo_ok () throws Exception {
+    void testAddVenue_fullVenueInfo_ok() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(newVenue.getVenueID());
@@ -268,7 +268,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_noPicture_ok () throws Exception {
+    void testAddVenue_noPicture_ok() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(newVenue.getVenueID());
@@ -289,7 +289,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_zeroOrNegativeVenueID_messageAndBadRequestAndRedirect() throws Exception {
+    void testAddVenue_zeroOrNegativeVenueID_badRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(-1);
@@ -310,7 +310,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_noPrice_badRequest () throws Exception {
+    void testAddVenue_noPrice_badRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(newVenue.getVenueID());
@@ -330,7 +330,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_illegalPrice_badRequest () throws Exception {
+    void testAddVenue_illegalPrice_badRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(newVenue.getVenueID());
@@ -350,7 +350,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_noOpenTime_badRequest () throws Exception {
+    void testAddVenue_noOpenTime_badRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(newVenue.getVenueID());
@@ -369,7 +369,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_illegalOpenTime_badRequest () throws Exception {
+    void testAddVenue_illegalOpenTime_badRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(newVenue.getVenueID());
@@ -389,7 +389,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_noCloseTime_badRequest () throws Exception {
+    void testAddVenue_noCloseTime_badRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(newVenue.getVenueID());
@@ -408,7 +408,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_illegalCloseTime_badRequest () throws Exception {
+    void testAddVenue_illegalCloseTime_badRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(newVenue.getVenueID());
@@ -428,7 +428,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_noVenueName_badRequest () throws Exception {
+    void testAddVenue_noVenueName_badRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(newVenue.getVenueID());
@@ -447,7 +447,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_noAddress_badRequest () throws Exception {
+    void testAddVenue_noAddress_badRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(newVenue.getVenueID());
@@ -466,7 +466,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_noDescription_badRequest () throws Exception {
+    void testAddVenue_noDescription_badRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(newVenue.getVenueID());
@@ -503,7 +503,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testAddVenue_databaseException_messageAndBadRequest () throws Exception {
+    void testAddVenue_databaseException_messageAndBadRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenThrow(new RuntimeException());
@@ -685,7 +685,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testModifyVenue_databaseException_messageAndBadRequest () throws Exception {
+    void testModifyVenue_databaseException_messageAndBadRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenThrow(new RuntimeException());
@@ -740,7 +740,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testCheckVenueName_illegalVenueName_ok() throws Exception {
+    void testCheckVenueName_illegalVenueName_badRequest() throws Exception {
         String venueName = "";
 
         when(venueService.countVenueName(venueName)).thenReturn(1);
@@ -753,7 +753,7 @@ class AdminVenueControllerTest {
     }
 
     @Test
-    void testCheckVenueName_databaseException_messageAndBadRequest () throws Exception {
+    void testCheckVenueName_databaseException_messageAndBadRequest() throws Exception {
         MockMultipartFile picture = new MockMultipartFile("picture", "test.jpg", "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenThrow(new RuntimeException());
