@@ -46,7 +46,6 @@ class VenueControllerTest {
     Venue venue1,venue3;
     @BeforeEach
     void setUp() {
-        // 新建测试venue
         String venue_name = "venue";
         String description = "this is description";
         String picture = "picture";
@@ -58,7 +57,7 @@ class VenueControllerTest {
     }
 
     @Test
-    void testToGymPage_legalVenueID_returned() throws Exception {
+    void testToGymPage_legalVenueID_ok() throws Exception {
         int venueId = 2;
 
         Venue venue = new Venue(venueId, "Test Venue", "Test Description", 100, "test.jpg", "Test Address", "08:00", "21:00");
@@ -96,7 +95,7 @@ class VenueControllerTest {
     }
 
     @Test
-    void testVenue_list_normalList_returned() throws Exception {
+    void testVenueList_normalList_ok() throws Exception {
         List<Venue> venueList = Arrays.asList(venue1, venue3);
         Page<Venue> venuePage = new PageImpl<>(venueList);
 
@@ -112,7 +111,7 @@ class VenueControllerTest {
     }
 
     @Test
-    void testVenue_list_emptyList_returned() throws Exception {
+    void testVenueList_emptyList_ok() throws Exception {
         List<Venue> venueList = Arrays.asList();
         Page<Venue> venuePage = new PageImpl<>(venueList);
 
@@ -128,12 +127,12 @@ class VenueControllerTest {
     }
 
     @Test
-    void testGetVenueList_normalPage_returned() throws Exception{
+    void testGetVenueList_normalPage_ok() throws Exception{
         int page = 1;
         List<Venue> venueList = Arrays.asList(venue1, venue3);
         Pageable pageable = PageRequest.of(page-1, 5, Sort.by("venueID").ascending());
 
-        when(venueService.findAll(any())).thenReturn(new PageImpl<>(venueList, pageable, 2));
+        when(venueService.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(venueList, pageable, 2));
 
         MvcResult mvcResult = mockMvc.perform(
                 MockMvcRequestBuilders.get("/venuelist/getVenueList").param("page", String.valueOf(page)))
@@ -159,15 +158,26 @@ class VenueControllerTest {
     }
 
     @Test
-    void testGetVenueList_LargePageNumber_emptyReturn() throws Exception {
-        // 模拟 VenueService 返回一个空的 Page 对象
-        when(venueService.findAll(any())).thenReturn(new PageImpl<>(Collections.emptyList()));
+    void testGetVenueList_LargePageNumber_returnFirstPage() throws Exception {
+        int page = 9999;
+        List<Venue> venueList = Arrays.asList(venue1);
+        Pageable pageable = PageRequest.of(page-1, 5, Sort.by("venueID").ascending());
 
-        // 发送 GET 请求，参数为 MAX_INT
-        mockMvc.perform(MockMvcRequestBuilders.get("/venuelist/getVenueList").param("page", String.valueOf(Integer.MAX_VALUE)))
+        when(venueService.findAll(any(Pageable.class))).thenReturn(new PageImpl<>(venueList, pageable, 1));
+
+        MvcResult mvcResult = mockMvc.perform(
+                        MockMvcRequestBuilders.get("/venuelist/getVenueList").param("page", String.valueOf(page)))
                 .andExpect(MockMvcResultMatchers.status().isOk())
-                .andExpect(jsonPath("$.content").isEmpty()) // 验证返回的 Page 内容为空
-                .andExpect(jsonPath("$.totalElements").value(0)); // 验证返回的 Page 的总元素数量为 0
+                .andExpect(jsonPath("$.content", hasSize(1)))
+                .andExpect(jsonPath("$.content[0].venueID", is(1)))
+                .andExpect(jsonPath("$.content[0].venueName", is("venue")))
+                .andExpect(jsonPath("$.content[0].description", is("this is description")))
+                .andExpect(jsonPath("$.content[0].price", is(100)))
+                .andExpect(jsonPath("$.content[0].picture", is("picture")))
+                .andExpect(jsonPath("$.content[0].address", is("address")))
+                .andExpect(jsonPath("$.content[0].open_time", is("08:00")))
+                .andExpect(jsonPath("$.content[0].close_time", is("21:00")))
+                .andReturn();
     }
 
     @Test
@@ -187,10 +197,10 @@ class VenueControllerTest {
     }
 
     @Test
-    void testGetVenueList_negativePageNumber_badRequest() throws Exception {
-        int invalidPageID = -1;
+    void testGetVenueList_noPageNumber_badRequest() throws Exception {
+        String invalidPageID = "";
 
-        mockMvc.perform(MockMvcRequestBuilders.get("/venue").param("venueID", String.valueOf(invalidPageID)))
+        mockMvc.perform(MockMvcRequestBuilders.get("/venue").param("venueID", invalidPageID))
                 .andExpect(MockMvcResultMatchers.status().isBadRequest());
     }
 }
