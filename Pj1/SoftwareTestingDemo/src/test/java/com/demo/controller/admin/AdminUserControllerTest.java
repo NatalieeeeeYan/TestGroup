@@ -120,7 +120,8 @@ public class AdminUserControllerTest {
     public void testUserList_invalidPage() throws Exception {
         assertThrows(NestedServletException.class, () -> {
             mockMvc.perform(get("/userList.do")
-                    .param("page", String.valueOf(-1)));
+                        .param("page", String.valueOf(-1)))
+                    .andExpect(status().isBadRequest());
         });
     }
 
@@ -282,7 +283,7 @@ public class AdminUserControllerTest {
         mockMvc.perform(post("/delUser.do")
                         .param("id", String.valueOf(-1)))
                 .andExpect(status().isOk())
-                .andExpect(content().string("true"));
+                .andExpect(content().string("false"));
         verify(userService).delByID(-1);
 
     }
@@ -290,7 +291,9 @@ public class AdminUserControllerTest {
     @Test
     public void testDelUser_noParam() throws Exception {
         assertThrows(NestedServletException.class, () -> {
-            mockMvc.perform(post("/delUser.do")); // 不传入参数
+            mockMvc.perform(post("/delUser.do")) // 不传入参数
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("false"));
         });
     }
 }
