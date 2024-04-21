@@ -15,8 +15,7 @@ import org.springframework.web.util.NestedServletException;
 import static org.hamcrest.Matchers.nullValue;
 import static org.junit.jupiter.api.Assertions.*;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.request;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -48,8 +47,7 @@ public class UserControllerTest {
         mockHttpSession.setAttribute("user",user);  // 假设已经登录
 
         mockMvc.perform(get("/login"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("login"));
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -100,6 +98,19 @@ public class UserControllerTest {
     }
 
     @Test
+    public void testLoginCheck_nullParam() throws Exception {
+        mockMvc.perform(post("/loginCheck.do")
+                        .param("userID","123")
+                        .param("password",""))  // 密码为空
+                .andExpect(status().isBadRequest())
+                .andExpect(content().string("false"))
+                .andExpect(request().sessionAttribute("user", nullValue()))
+                .andExpect(request().sessionAttribute("admin", nullValue()));
+
+        verify(userService).checkLogin("123","");
+    }
+
+    @Test
     public void testRegister_valid() throws Exception {
         User user = new User(1, "123", "123", "123456", "a@qq.com", "12345678901", 0, "123.jpg");
         when(userService.create(user)).thenReturn(1);
@@ -111,6 +122,48 @@ public class UserControllerTest {
                         .param("email", user.getEmail())
                         .param("phone", user.getPhone()))
                 .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("login"));
+
+        verify(userService).create(any());
+    }
+
+    @Test
+    public void testRegister_repetitiveUserID() throws Exception {
+        User user = new User(1, "123", "123", "123456", "a@qq.com", "12345678901", 0, "123.jpg");
+        when(userService.create(user)).thenReturn(1);
+
+        mockMvc.perform(post("/register.do")
+                        .param("userID", user.getUserID())
+                        .param("userName", user.getUserName())
+                        .param("password", user.getPassword())
+                        .param("email", user.getEmail())
+                        .param("phone", user.getPhone()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("login"));
+        when(userService.create(user)).thenReturn(1);
+        mockMvc.perform(post("/register.do")
+                        .param("userID", user.getUserID())  // 重复的userID
+                        .param("userName", user.getUserName())
+                        .param("password", user.getPassword())
+                        .param("email", user.getEmail())
+                        .param("phone", user.getPhone()))
+                .andExpect(status().is4xxClientError());
+
+        verify(userService, times(2)).create(any());
+    }
+
+    @Test
+    public void testRegister_smallPassword() throws Exception {
+        User user = new User(1, "123", "123", "1", "a@qq.com", "12345678901", 0, "123.jpg");
+        when(userService.create(user)).thenReturn(1);
+
+        mockMvc.perform(post("/register.do")
+                        .param("userID", user.getUserID())
+                        .param("userName", user.getUserName())
+                        .param("password", user.getPassword())
+                        .param("email", user.getEmail())
+                        .param("phone", user.getPhone()))
+                .andExpect(status().is4xxClientError())
                 .andExpect(redirectedUrl("login"));
 
         verify(userService).create(any());
@@ -131,15 +184,41 @@ public class UserControllerTest {
     }
 
     @Test
+    public void testLogout_byAdmin() throws Exception {
+        User admin = new User(1, "123", "123", "123456", "a@qq.com", "12345678901", 1, "123.jpg");
+        MockHttpSession mockHttpSession = new MockHttpSession();
+        mockHttpSession.setAttribute("admin",admin);
+
+
+        mockMvc.perform(get("/logout.do")
+                        .session(mockHttpSession))
+                .andExpect(request().sessionAttribute("user", nullValue())) // 验证已退出
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     public void testLogout_without_login() throws Exception {
         mockMvc.perform(get("/logout.do"))
                 .andExpect(request().sessionAttribute("user", nullValue())) // 发现可以在未登录情况下直接退出
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testQuit_valid() throws Exception {
+        User user = new User(1, "123", "123", "123456", "a@qq.com", "12345678901", 0, "123.jpg");
+
+        MockHttpSession mockHttpSession = new MockHttpSession();
+        mockHttpSession.setAttribute("user",user);
+
+        mockMvc.perform(get("/quit.do")
+                        .session(mockHttpSession))
+                .andExpect(request().sessionAttribute("admin", nullValue()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/index"));
     }
 
     @Test
-    public void testQuit_valid() throws Exception {
+    public void testQuit_byUser() throws Exception {
         User admin = new User(1, "123", "123", "123456", "a@qq.com", "12345678901", 1, "123.jpg");
 
         MockHttpSession mockHttpSession = new MockHttpSession();
@@ -148,8 +227,7 @@ public class UserControllerTest {
         mockMvc.perform(get("/quit.do")
                         .session(mockHttpSession))
                 .andExpect(request().sessionAttribute("admin", nullValue()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/index"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -179,6 +257,7 @@ public class UserControllerTest {
         assertEquals(picture, updatedUser.getPicture());    // 验证图片未修改
         verify(userService).findByUserID("123");
     }
+
     @Test
     public void testUpdateUser_newPicture() throws Exception {
         User user = new User(1, "123", "123", "123456", "a@qq.com", "12345678901", 0, "123.jpg");
@@ -205,6 +284,64 @@ public class UserControllerTest {
         assertEquals(updatedUser.getPassword(),"123456");   // 验证密码未修改
         assertNotEquals(oldPicture, updatedUser.getPicture());  // 验证图片被修改
         verify(userService).findByUserID("123");
+    }
+
+    @Test
+    public void testUpdateUser_sameNewPassword() throws Exception {
+        User user = new User(1, "123", "123", "123456", "a@qq.com", "12345678901", 0, "123.jpg");
+        MockHttpSession mockHttpSession = new MockHttpSession();
+        mockHttpSession.setAttribute("user",user);
+        String picture = user.getPicture();
+
+        byte[] content = null;
+        MockMultipartFile mockMultipartFile = new MockMultipartFile("picture", "", "image/jpeg,", content); // 不修改图片
+        when(userService.findByUserID("123")).thenReturn(user);
+
+        mockMvc.perform(multipart("/updateUser.do")
+                        .file(mockMultipartFile)
+                        .session(mockHttpSession)
+                        .param("userID", user.getUserID())
+                        .param("userName", user.getUserName())
+                        .param("passwordNew", "123456")    // 与原密码相同
+                        .param("email", user.getEmail())
+                        .param("phone", user.getPhone()))
+                .andExpect(status().is4xxClientError());
+
+        User updatedUser = (User) mockHttpSession.getAttribute("user");
+        assertEquals(updatedUser.getPassword(),"123456");
+        assertEquals(picture, updatedUser.getPicture());    // 图片未修改
+        verify(userService).findByUserID("123");
+    }
+
+    @Test
+    public void testUpdateUser_anotherUser() throws Exception {
+        User user = new User(1, "123", "123", "123456", "a@qq.com", "12345678901", 0, "123.jpg");
+        User user_abc = new User(2, "abc", "abc", "123456", "a@qq.com", "12345678901", 0, "123.jpg");
+
+        MockHttpSession mockHttpSession = new MockHttpSession();
+        mockHttpSession.setAttribute("user",user);  // 登录了123的用户
+        String picture = user.getPicture();
+
+        byte[] content = null;
+        MockMultipartFile mockMultipartFile = new MockMultipartFile("picture", "", "image/jpeg,", content); // 不修改图片
+        when(userService.findByUserID("123")).thenReturn(user);
+        when(userService.findByUserID("abc")).thenReturn(user_abc);
+
+        mockMvc.perform(multipart("/updateUser.do")
+                        .file(mockMultipartFile)
+                        .session(mockHttpSession)
+                        .param("userID", "abc")
+                        .param("userName", user.getUserName())
+                        .param("passwordNew", "new")    // 修改密码
+                        .param("email", user.getEmail())
+                        .param("phone", user.getPhone()))
+                .andExpect(status().isBadRequest());
+
+        User updatedUser = (User) mockHttpSession.getAttribute("user");
+        assertEquals(updatedUser.getUserID(),"abc");    // 修改了abc用户的信息
+        assertEquals(updatedUser.getPassword(),"new");  // 验证密码被修改
+        assertEquals(picture, updatedUser.getPicture());    // 验证图片未修改
+        verify(userService).findByUserID("abc");
     }
 
     @Test

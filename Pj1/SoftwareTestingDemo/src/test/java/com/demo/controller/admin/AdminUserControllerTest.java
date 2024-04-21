@@ -11,6 +11,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.data.domain.*;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.web.util.NestedServletException;
 
 import java.util.Collections;
 import java.util.List;
@@ -20,6 +21,7 @@ import java.util.stream.IntStream;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.mockito.Mockito.*;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -115,6 +117,15 @@ public class AdminUserControllerTest {
     }
 
     @Test
+    public void testUserList_invalidPage() throws Exception {
+        assertThrows(NestedServletException.class, () -> {
+            mockMvc.perform(get("/userList.do")
+                        .param("page", String.valueOf(-1)))
+                    .andExpect(status().isBadRequest());
+        });
+    }
+
+    @Test
     public void testUserEdit_valid() throws Exception {
         List<User> userList = IntStream.range(0, 11)
                 .mapToObj(i -> new User(i, "123", "abc", "123456", "a@qq.com", "12345678901", 0, "123.jpg"))
@@ -134,7 +145,7 @@ public class AdminUserControllerTest {
 
     @Test
     public void testUserEdit_invalidID() throws Exception {
-        when(userService.findById(-1)).thenReturn(null);    // 假设返回null（但好像和实际不符
+        when(userService.findById(-1)).thenReturn(null);    // 假设返回null
         mockMvc.perform(get("/user_edit")
                         .param("id", String.valueOf(-1)))
                 .andExpect(status().isOk())
@@ -142,6 +153,13 @@ public class AdminUserControllerTest {
                 .andExpect(model().attributeDoesNotExist("user"));  // 验证attribute中不会被添加user
 
         verify(userService).findById(-1);
+    }
+
+    @Test
+    public void testUserEdit_noParam() throws Exception {
+        assertThrows(NestedServletException.class, () -> {
+            mockMvc.perform(get("/user_edit")); // 不传入参数
+        });
     }
 
     @Test
@@ -184,6 +202,50 @@ public class AdminUserControllerTest {
     }
 
     @Test
+    public void testAddUser_alreadyExist() throws Exception {
+        User user = new User(1, "123", "abc", "123456", "a@qq.com", "12345678901", 0, "123.jpg");
+        when(userService.create(user)).thenReturn(1);
+
+        mockMvc.perform(post("/addUser.do")
+                        .param("userID", user.getUserID())
+                        .param("userName", user.getUserName())
+                        .param("password", user.getPassword())
+                        .param("email", user.getEmail())
+                        .param("phone", user.getPhone()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("user_manage"));
+
+        when(userService.create(user)).thenReturn(1);
+        mockMvc.perform(post("/addUser.do")
+                        .param("userID", user.getUserID())  // 使用相同userID
+                        .param("userName", user.getUserName())
+                        .param("password", user.getPassword())
+                        .param("email", user.getEmail())
+                        .param("phone", user.getPhone()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("user_manage"));
+
+        verify(userService, times(2)).create(any());
+    }
+
+    @Test
+    public void testAddUser_noPassword() throws Exception {
+        User user = new User(1, "123", "abc", "", "a@qq.com", "12345678901", 0, "123.jpg");
+        when(userService.create(user)).thenReturn(1);
+
+        mockMvc.perform(post("/addUser.do")
+                        .param("userID", user.getUserID())
+                        .param("userName", user.getUserName())
+                        .param("password", user.getPassword())
+                        .param("email", user.getEmail())
+                        .param("phone", user.getPhone()))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("user_manage"));
+
+        verify(userService).create(new User(0, "123", "abc", "", "a@qq.com", "12345678901", 0, ""));
+    }
+
+    @Test
     public void testCheckUserID_already_new() throws Exception {
         when(userService.countUserID("already")).thenReturn(1); // 已经存在该userID
         when(userService.countUserID("new")).thenReturn(0); // 不存在该userID
@@ -212,5 +274,26 @@ public class AdminUserControllerTest {
                 .andExpect(content().string("true"));
         verify(userService).delByID(1);
 
+    }
+
+    @Test
+    public void testDelUser_invalidID() throws Exception {
+        doNothing().when(userService).delByID(1);
+
+        mockMvc.perform(post("/delUser.do")
+                        .param("id", String.valueOf(-1)))
+                .andExpect(status().isOk())
+                .andExpect(content().string("false"));
+        verify(userService).delByID(-1);
+
+    }
+
+    @Test
+    public void testDelUser_noParam() throws Exception {
+        assertThrows(NestedServletException.class, () -> {
+            mockMvc.perform(post("/delUser.do")) // 不传入参数
+                    .andExpect(status().isOk())
+                    .andExpect(content().string("false"));
+        });
     }
 }
