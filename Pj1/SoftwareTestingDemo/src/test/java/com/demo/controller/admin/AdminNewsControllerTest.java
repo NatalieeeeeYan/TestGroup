@@ -85,6 +85,19 @@ class AdminNewsControllerTest {
         verify(newsService, times(1)).findAll(news_pageable);
     }
 
+    //null
+    @Test
+    public void testNewsManage_null() throws Exception {
+        Pageable news_pageable = PageRequest.of(0, 10, Sort.by("time").ascending());
+        Page<News> emptyPage = new PageImpl<>(null, news_pageable, 0);
+
+        when(newsService.findAll(news_pageable)).thenReturn(emptyPage);
+
+        mockMvc.perform(get("/news_manage"))
+                .andExpect(status().isBadRequest());
+
+    }
+
 
     @Test
     public void testNewsAdd() throws Exception {
@@ -114,11 +127,17 @@ class AdminNewsControllerTest {
         when(newsService.findById(-1)).thenReturn(null);
 
         mockMvc.perform(get("/news_edit?newsID=-1"))
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andExpect(view().name("/admin/news_edit"))
                 .andExpect(model().attributeDoesNotExist("news")); // 无效ID时不应该有news属性
 
         verify(newsService, times(1)).findById(-1);
+    }
+
+    @Test
+    public void testNewsEdit_nullID() throws Exception {
+            mockMvc.perform(get("/news_edit?newsID="))
+                    .andExpect(status().isBadRequest());
     }
 
 
@@ -158,6 +177,21 @@ class AdminNewsControllerTest {
 
         verify(newsService, times(1)).findAll(news_pageable);
     }
+
+    @Test
+    public void testNewsList_invalid() throws Exception {
+
+        mockMvc.perform(get("/newsList.do?page=-1"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    public void testNewsList_nullPage() throws Exception {
+
+        mockMvc.perform(get("/newsList.do?page="))
+                .andExpect(status().isBadRequest());
+    }
+
 
 
     @Test
