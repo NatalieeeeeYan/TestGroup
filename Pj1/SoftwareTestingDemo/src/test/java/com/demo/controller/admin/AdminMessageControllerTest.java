@@ -75,7 +75,7 @@ class AdminMessageControllerTest {
     }
 
     @Test
-    void message_manage_valid() throws Exception {
+    void testMessageManage_valid_OK() throws Exception {
         Pageable message_pageable = PageRequest.of(0, 10, Sort.by("time").descending());
         Page<Message> messagePage = new PageImpl<>(messages, message_pageable, 3);
 
@@ -90,7 +90,7 @@ class AdminMessageControllerTest {
     }
 
     @Test
-    void message_manage_without_messages() throws Exception {
+    void testMessageManage_withoutMessages_OK() throws Exception {
         Pageable message_pageable = PageRequest.of(0, 10, Sort.by("time").descending());
         Page<Message> emptyPage = new PageImpl<>(Collections.emptyList(), message_pageable, 0);
 
@@ -105,7 +105,7 @@ class AdminMessageControllerTest {
     }
 
     @Test
-    void messageList_valid() throws Exception {
+    void testMessageList_valid_OK() throws Exception {
         int page = 1;
         Pageable message_pageable = PageRequest.of(page - 1, 10, Sort.by("time").descending());
         List<Message> messages_test = new ArrayList<>();
@@ -136,7 +136,7 @@ class AdminMessageControllerTest {
     }
 
     @Test
-    void messageList_with_empty_page() throws Exception {
+    void testMessageList_withEmptyPage_OK() throws Exception {
         int page = 99; // Assuming this is beyond the total number of available pages
         Pageable message_pageable = PageRequest.of(page - 1, 10, Sort.by("time").descending());
         Page<Message> emptyPage = new PageImpl<>(Collections.emptyList(), message_pageable, 0);
@@ -154,27 +154,29 @@ class AdminMessageControllerTest {
     }
 
     @Test
-    void messageList_negativePageNumber() throws Exception {
+    void testMessageList_negativePageNumber_badRequest() throws Exception {
         int invalidPage = -1; // 页码为负
 
         // 执行GET请求
-        mockMvc.perform(get("/messageList.do")
-                        .param("page", String.valueOf(invalidPage))
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest()); // 检查HTTP响应状态是否为400 Bad Request
+        assertThrows(IllegalArgumentException.class, () -> {
+            mockMvc.perform(get("/messageList.do")
+                            .param("page", String.valueOf(invalidPage)))
+                    .andExpect(status().isBadRequest());
+        });
     }
 
     @Test
-    void messageList_nullPageNumber() throws Exception {
+    void testMessageList_nullPageNumber_badRequest() throws Exception {
         // 传入空页码
-        mockMvc.perform(get("/messageList.do")
-                        .param("page", (String) null)
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest()); // 检查HTTP响应状态是否为400 Bad Request
+        assertThrows(IllegalArgumentException.class, () -> {
+            mockMvc.perform(get("/messageList.do")
+                            .param("page", null))
+                    .andExpect(status().isBadRequest());
+        });
     }
 
     @Test
-    void testMessageList_pageNumberTooHigh_noContent() throws Exception {
+    void testMessageList_pageNumberTooHigh_OK() throws Exception {
         int highPage = 2; // 假设只有1页数据，请求第2页
         Pageable pageable = PageRequest.of(highPage - 1, 10, Sort.by("time").descending());
         Page<Message> emptyPage = new PageImpl<>(Collections.emptyList(), pageable, 1); // 总共1页
@@ -194,7 +196,7 @@ class AdminMessageControllerTest {
     }
 
     @Test
-    void passMessage_valid() throws Exception {
+    void testPassMessage_valid_OK() throws Exception {
         int messageID = 1;
 
         //given
@@ -208,24 +210,31 @@ class AdminMessageControllerTest {
 
         verify(messageService, times(1)).confirmMessage(messageID);
     }
+
     @Test
-    void passMessage_invalid() throws Exception {
+    void testPassMessage_invalidId_badRequest() throws Exception {
         int messageID = -1;
 
-        //given
-        doNothing().when(messageService).confirmMessage(messageID);
-
-        //when&then
-        mockMvc.perform(post("/passMessage.do")
-                        .param("messageID", String.valueOf(messageID)))
-                .andExpect(status().isOk())
-                .andExpect(content().string("true"));
+        assertThrows(IllegalArgumentException.class, () -> {
+            mockMvc.perform(post("/passMessage.do")
+                            .param("messageID", String.valueOf(messageID)))
+                    .andExpect(status().isBadRequest());
+        });
 
         verify(messageService, times(1)).confirmMessage(messageID);
     }
 
     @Test
-    void rejectMessage_valid() throws Exception {
+    void testPassMessage_nullId_badRequest() throws Exception {
+        assertThrows(IllegalArgumentException.class, () -> {
+            mockMvc.perform(post("/passMessage.do")
+                            .param("messageID", null))
+                    .andExpect(status().isBadRequest());
+        });
+    }
+
+    @Test
+    void testRejectMessage_valid_OK() throws Exception {
         int messageID = 1;
 
         // given
@@ -242,7 +251,7 @@ class AdminMessageControllerTest {
 
 
     @Test
-    void rejectMessage_invalid() throws Exception {
+    void testRejectMessage_invalidId_badRequest() throws Exception {
         int messageID = -1;
 
         // given
@@ -251,15 +260,23 @@ class AdminMessageControllerTest {
         //when&then
         mockMvc.perform(post("/rejectMessage.do")
                         .param("messageID", String.valueOf(messageID)))
-                .andExpect(status().isOk())
-                .andExpect(content().string("true"));
+                .andExpect(status().isBadRequest());
 
         verify(messageService, times(1)).rejectMessage(messageID);
     }
 
+    @Test
+    void testRejectMessage_nullId_badRequest() throws Exception {
+        assertThrows(IllegalArgumentException.class, () -> {
+            mockMvc.perform(post("/rejectMessage.do")
+                            .param("messageID", null))
+                    .andExpect(status().isBadRequest());
+        });
+    }
+
 
     @Test
-    void delMessage_valid() throws Exception {
+    void testDelMessage_valid_OK() throws Exception {
         int messageID = 1;
 
         //given
@@ -275,7 +292,7 @@ class AdminMessageControllerTest {
     }
 
     @Test
-    void delMessage_invalid() throws Exception {
+    void testDelMessage_invalidId_badRequest() throws Exception {
         int messageID = -1;
 
         //given
@@ -287,5 +304,15 @@ class AdminMessageControllerTest {
                 .andExpect(status().isBadRequest());
 
         verify(messageService, times(1)).delById(messageID);
+    }
+
+
+    @Test
+    void testDelMessage_nullId_badRequest() throws Exception {
+        assertThrows(IllegalArgumentException.class, () -> {
+            mockMvc.perform(post("/delMessage.do")
+                            .param("messageID", null))
+                    .andExpect(status().isBadRequest());
+        });
     }
 }

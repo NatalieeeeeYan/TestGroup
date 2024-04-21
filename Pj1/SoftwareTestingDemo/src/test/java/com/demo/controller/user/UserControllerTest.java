@@ -1,4 +1,4 @@
-package com.demo.controller.user;
+package com.demo;
 
 import com.demo.controller.user.UserController;
 import com.demo.entity.User;
@@ -47,8 +47,7 @@ public class UserControllerTest {
         mockHttpSession.setAttribute("user",user);  // 假设已经登录
 
         mockMvc.perform(get("/login"))
-                .andExpect(status().isOk())
-                .andExpect(view().name("login"));
+                .andExpect(status().isForbidden());
     }
 
     @Test
@@ -100,12 +99,10 @@ public class UserControllerTest {
 
     @Test
     public void testLoginCheck_nullParam() throws Exception {
-        when(userService.checkLogin("123","")).thenReturn(null);
-
         mockMvc.perform(post("/loginCheck.do")
                         .param("userID","123")
                         .param("password",""))  // 密码为空
-                .andExpect(status().isOk())
+                .andExpect(status().isBadRequest())
                 .andExpect(content().string("false"))
                 .andExpect(request().sessionAttribute("user", nullValue()))
                 .andExpect(request().sessionAttribute("admin", nullValue()));
@@ -150,8 +147,7 @@ public class UserControllerTest {
                         .param("password", user.getPassword())
                         .param("email", user.getEmail())
                         .param("phone", user.getPhone()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("login"));
+                .andExpect(status().is4xxClientError());
 
         verify(userService, times(2)).create(any());
     }
@@ -167,7 +163,7 @@ public class UserControllerTest {
                         .param("password", user.getPassword())
                         .param("email", user.getEmail())
                         .param("phone", user.getPhone()))
-                .andExpect(status().is3xxRedirection())
+                .andExpect(status().is4xxClientError())
                 .andExpect(redirectedUrl("login"));
 
         verify(userService).create(any());
@@ -197,16 +193,14 @@ public class UserControllerTest {
         mockMvc.perform(get("/logout.do")
                         .session(mockHttpSession))
                 .andExpect(request().sessionAttribute("user", nullValue())) // 验证已退出
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/index"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
     public void testLogout_without_login() throws Exception {
         mockMvc.perform(get("/logout.do"))
                 .andExpect(request().sessionAttribute("user", nullValue())) // 发现可以在未登录情况下直接退出
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/index"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -233,8 +227,7 @@ public class UserControllerTest {
         mockMvc.perform(get("/quit.do")
                         .session(mockHttpSession))
                 .andExpect(request().sessionAttribute("admin", nullValue()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/index"));
+                .andExpect(status().isBadRequest());
     }
 
     @Test
@@ -312,8 +305,7 @@ public class UserControllerTest {
                         .param("passwordNew", "123456")    // 与原密码相同
                         .param("email", user.getEmail())
                         .param("phone", user.getPhone()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("user_info"));
+                .andExpect(status().is4xxClientError());
 
         User updatedUser = (User) mockHttpSession.getAttribute("user");
         assertEquals(updatedUser.getPassword(),"123456");
@@ -343,8 +335,7 @@ public class UserControllerTest {
                         .param("passwordNew", "new")    // 修改密码
                         .param("email", user.getEmail())
                         .param("phone", user.getPhone()))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("user_info"));
+                .andExpect(status().isBadRequest());
 
         User updatedUser = (User) mockHttpSession.getAttribute("user");
         assertEquals(updatedUser.getUserID(),"abc");    // 修改了abc用户的信息
