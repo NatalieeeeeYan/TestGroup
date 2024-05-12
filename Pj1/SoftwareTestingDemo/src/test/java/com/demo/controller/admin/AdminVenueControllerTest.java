@@ -290,7 +290,8 @@ class AdminVenueControllerTest {
 
     @Test
     void testAddVenue_zeroOrNegativeVenueID_badRequest() throws Exception {
-        MockMultipartFile picture = new MockMultipartFile("picture", "", "image/jpeg", "test image".getBytes());
+        MockMultipartFile picture = new MockMultipartFile("picture", "",
+                "image/jpeg", "test image".getBytes());
 
         when(venueService.create(any(Venue.class))).thenReturn(-1);
 
