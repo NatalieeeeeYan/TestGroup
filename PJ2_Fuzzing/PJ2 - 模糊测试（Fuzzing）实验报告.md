@@ -13,6 +13,23 @@
 |      |      |          |              |
 |      |      |          |              |
 
+##### 内容：
+
+1. 完善 6 个基本 mutators：【xby】
+   - insert_random_character
+   - flip_random_bits
+   - arithmetic_random_bytes
+   - interesting_random_bytes
+   - havoc_random_insert
+   - havoc_random_replace
+   - 编写 1 个附加 mutator
+2. 完善原有 PathPowerSchedule【hqr & lb】
+   - 编写 1 个新的 PowerSchedule
+3. 完善 PathGreyBoxFuzzer【hqr & lb】
+4. 调整代码 完成测试【zsq & swy】
+
+ddl：1-3 6/1之前，4 6/16之前
+
 ## 二、Mutator
 
 `在本章中，阐述你新增的 Mutator 的代码以及实现思路，以下为示例`
