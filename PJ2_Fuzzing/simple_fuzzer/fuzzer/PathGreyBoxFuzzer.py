@@ -2,7 +2,7 @@ import time
 from typing import List, Tuple, Any
 
 from fuzzer.GreyBoxFuzzer import GreyBoxFuzzer
-from schedule.PathPowerSchedule import PathPowerSchedule
+from schedule.PathPowerSchedule import PathPowerSchedule, get_path_id
 from runner.FunctionCoverageRunner import FunctionCoverageRunner
 
 
@@ -42,5 +42,11 @@ class PathGreyBoxFuzzer(GreyBoxFuzzer):
         result, outcome = super().run(runner)
 
         # TODO
+        path_id = get_path_id(runner.coverage())
+        if path_id not in self.schedule.path_frequency:
+            self.schedule.path_frequency[path_id] = 1
+            self.last_path_time = time.time()
+        else:
+            self.schedule.path_frequency[path_id] += 1
 
         return result, outcome
