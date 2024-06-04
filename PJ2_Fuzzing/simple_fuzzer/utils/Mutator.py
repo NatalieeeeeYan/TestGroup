@@ -30,10 +30,7 @@ def flip_random_bits(s: str) -> str:
         binary_char = bin(ord(char))[2:].zfill(8)  
         binary_string += binary_char
     N = random.choice([1, 2, 4])
-    if len(binary_string) < N:
-        pos = 0 
-    else:
-        pos = random.randint(0, len(binary_string) - N)
+    pos = random.randint(0, len(binary_string) - N)
     flip_bits = binary_string[pos:pos + N]
     flip_bits = ''.join(['1' if bit == '0' else '0' for bit in flip_bits])
     binary_string = binary_string[:pos] + flip_bits + binary_string[pos + N:]
@@ -59,15 +56,15 @@ def arithmetic_random_bytes(s: str) -> str:
     从 s 中随机挑选一个 byte，将其与其后面 N - 1 个 bytes 进行字节随机增减
     注意：不要越界；如果出现单个字节在添加随机数之后，可以通过取模操作使该字节落在 [32, 127] 之间  # 修改了范围
     """
-    if len(s) == 0:
-        return s  # 空字符串时返回原字符串
     N = random.choice([1, 2, 4])
-    if len(s) < N:
-        pos = 0
-        N = 1
-    else:
+    # pos = random.randint(0, len(s) - N)
+    if len(s) - N > 0:
         pos = random.randint(0, len(s) - N)
-    for i in range(N):
+    else:
+        pos = 0
+    # for i in range(N):
+    index = min(N, len(s))
+    for i in range(index):
         num1 = ord(s[pos + i])
         num2 = num1 + random.randint(-35, 35)
         if num2 < 32:
@@ -99,10 +96,11 @@ def interesting_random_bytes(s: str) -> str:
     ]
     pick = random.choice(interesting_values)
     N = len(pick)
-    if len(s) < N:
-        pos = 0
-    else:
+    # pos = random.randint(0, len(s) - N)
+    if len(s) - N > 0:
         pos = random.randint(0, len(s) - N)
+    else:
+        pos = 0
     s = s[:pos] + ''.join([struct.pack('B', byte).decode() for byte in pick]) + s[pos + N:]
     return s
 
@@ -148,9 +146,6 @@ def delete_random_bytes(s: str, min_length: int = 10) -> str:
     基于 AFL 变异算法策略中的 delete byte 实现随机删除
     随机选取一个位置，删除随后一段随机长度的内容，但要保证删除后字符串长度不小于 min_length
     """
-    if len(s) <= min_length:
-        return s 
-    
     while len(s) > min_length:
         pos = random.randint(0, len(s))
         length = random.randint(0, len(s) - pos)
@@ -164,15 +159,14 @@ def change_case(s: str) -> str:
     """
     随机选取 N 字节（N = 1, 2, 4），将该位置的字符转换为大写或小写
     """
-    if len(s) == 0:
-        return s  # 空字符串时返回原字符串
     N = random.choice([1, 2, 4])
-    if len(s) < N:
-        pos = 0
-        N = random.randint(1, len(s))
-    else:
+    if len(s) - N > 0:
         pos = random.randint(0, len(s) - N)
-    for i in range(N):
+    else:
+        pos = 0
+    index = min(N, len(s))
+    for i in range(index):
+        # print(pos+i, len(s))
         char = s[pos + i]
         if char.isalpha():  # 检查字符是否是字母字符
             s = s[:pos + i] + char.swapcase() + s[pos + i + 1:]

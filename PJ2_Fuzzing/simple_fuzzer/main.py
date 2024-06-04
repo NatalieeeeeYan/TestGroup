@@ -21,13 +21,13 @@ class Result:
 
 
 if __name__ == "__main__":
-    f_runner = FunctionCoverageRunner(sample3)
-    seeds = load_object("corpus/corpus_3")
+    f_runner = FunctionCoverageRunner(sample4)
+    seeds = load_object("corpus/corpus_4")
 
-    # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(5), is_print=True)
+    # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(8), is_print=True)
     grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=CoveragePowerSchedule(), is_print=True)
     start_time = time.time()
-    grey_fuzzer.runs(f_runner, run_time=300)
+    grey_fuzzer.runs(f_runner, run_time=600)
     res = Result(grey_fuzzer.covered_line, set(grey_fuzzer.crash_map.values()), start_time, time.time())
-    dump_object("_result" + os.sep + "Sample-3.pkl", res)
-    print(load_object("_result" + os.sep + "Sample-3.pkl"))
+    dump_object("_result" + os.sep + "Sample-4.pkl", res)
+    print(load_object("_result" + os.sep + "Sample-4.pkl"))

@@ -32,6 +32,7 @@ class GreyBoxFuzzer(Fuzzer):
         self.seeds = seeds
         self.mutator = Mutator()
         self.schedule = schedule
+        self.new_coverage = set()
         if is_print:
             print("""
 ┌───────────────────────┬───────────────────────┬───────────────────┬────────────────┬───────────────────┐
@@ -86,9 +87,12 @@ class GreyBoxFuzzer(Fuzzer):
         """
         result, outcome = super().run(runner)
         if len(self.covered_line) != len(runner.all_coverage):
+            self.new_coverage = runner.all_coverage - self.covered_line
+            print(self.new_coverage)
             self.covered_line |= runner.all_coverage
             if outcome == Runner.PASS:
                 # We have new coverage
+                # print("new")
                 seed = Seed(self.inp, runner.coverage())
                 self.population.append(seed)
         if outcome == Runner.FAIL:

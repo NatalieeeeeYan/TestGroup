@@ -20,6 +20,7 @@ class PathPowerSchedule(PowerSchedule):
         # TODO
         self.exp = exp # 指数级
         self.path_frequency: Dict = {}
+        self.novelty_scores: Dict = {}
 
     def assign_energy(self, population: Sequence[Seed]) -> None:
         """Assign exponential energy inversely proportional to path frequency"""

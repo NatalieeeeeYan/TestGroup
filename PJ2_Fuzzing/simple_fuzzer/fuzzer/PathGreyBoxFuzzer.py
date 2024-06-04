@@ -39,8 +39,8 @@ class PathGreyBoxFuzzer(GreyBoxFuzzer):
 
     def run(self, runner: FunctionCoverageRunner) -> Tuple[Any, str]:  # type: ignore
         """Inform scheduler about path frequency"""
+       
         result, outcome = super().run(runner)
-
         # TODO
         path_id = get_path_id(runner.coverage())
         if path_id not in self.schedule.path_frequency:
@@ -48,5 +48,13 @@ class PathGreyBoxFuzzer(GreyBoxFuzzer):
             self.last_path_time = time.time()
         else:
             self.schedule.path_frequency[path_id] += 1
+
+        if self.new_coverage:
+            new_path_id = get_path_id(self.new_coverage)
+            if new_path_id not in self.schedule.novelty_scores:
+                self.schedule.novelty_scores[new_path_id] = 1
+                self.last_path_time = time.time()
+            else:
+                self.schedule.novelty_scores[new_path_id] += 1
 
         return result, outcome
