@@ -19,7 +19,7 @@ class FunctionCoverageRunner(Runner):
             try:
                 result = self.function(inp)
             except Exception as exc:
-                self._coverage = cov.coverage()
+                # self._coverage = cov.coverage()
                 raise exc
             finally:
                 self._coverage = cov.coverage()
