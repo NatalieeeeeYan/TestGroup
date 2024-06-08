@@ -30,7 +30,7 @@ logger = logging.getLogger(__name__)
 
 class GreyBoxFuzzer(Fuzzer):
 
-    def __init__(self, seeds: List[str], schedule: PowerSchedule, is_print: bool, seed_directory: str = './seed') -> None:
+    def __init__(self, seeds: List[str], schedule: PowerSchedule, is_print: bool, seed_directory: str = './seeds') -> None:
         """Constructor.
         `seeds` - a list of (input) strings to mutate.
         `mutator` - the mutator to apply.
@@ -112,7 +112,7 @@ class GreyBoxFuzzer(Fuzzer):
             if outcome == Runner.PASS:
                 # We have new coverage
                 # print("new")
-                seed = Seed(self.inp, runner.coverage())
+                seed = Seed(data=self.inp, _coverage=runner.coverage(), path=None, directory=self.seed_directory)
                 self.population.append(seed)        
                 # Mutated seeds are appened to population -> gen seed and save, add hash/path value into population
                 logger.info(f"New seed added with coverage: {seed.id}")

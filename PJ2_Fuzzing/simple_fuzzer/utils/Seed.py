@@ -25,12 +25,12 @@ class Seed:
         """Initialize from seed data"""
         # self.data = data
         # These will be needed for advanced power schedules
-        self.coverage: Set[Location] = _coverage
+        # self.coverage: Set[Location] = _coverage
         self.energy = 0.0
 
         if data is not None:
             self.id = get_md5_of_object(data)
-            self.path = path if path else f"{self.id}.seed"
+            self.path = path if path else os.path.join(directory, f"{self.id}.seed")
             self.save(data, _coverage)
         else:
             self.id = None
@@ -46,9 +46,9 @@ class Seed:
 
     def save(self, data: str, coverage: Set[Location], directory: str = './seeds') -> None:
         """Save the seed to disk"""
-        if not os.path.exists(directory):
-            os.makedirs(directory)
-        self.path = os.path.join(directory, self.path.split('/')[-1])
+        # if not os.path.exists(directory):
+        #     os.makedirs(directory)
+        # self.path = os.path.join(directory, self.path.split('/')[-1])
         dump_object(self.path, {
             'data': data,
             'coverage': coverage

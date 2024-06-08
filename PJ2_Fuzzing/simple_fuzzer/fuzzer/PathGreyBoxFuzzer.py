@@ -9,8 +9,8 @@ from runner.FunctionCoverageRunner import FunctionCoverageRunner
 class PathGreyBoxFuzzer(GreyBoxFuzzer):
     """Count how often individual paths are exercised."""
 
-    def __init__(self, seeds: List[str], schedule: PathPowerSchedule, is_print: bool):
-        super().__init__(seeds, schedule, False)
+    def __init__(self, seeds: List[str], schedule: PathPowerSchedule, is_print: bool, seed_directory: str = './seeds'):
+        super().__init__(seeds, schedule, False, seed_directory=seed_directory)
 
         # TODO
 
