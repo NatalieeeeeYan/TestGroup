@@ -190,4 +190,7 @@ class Mutator:
 
     def mutate(self, inp: Any) -> Any:
         mutator = random.choice(self.mutators)
+        # for _ in range(random.randint(1, 3)):  # 每次调用 1 到 3 个变异操作
+        #     mutator = random.choice(self.mutators)
+        #     inp = mutator(inp)
         return mutator(inp)

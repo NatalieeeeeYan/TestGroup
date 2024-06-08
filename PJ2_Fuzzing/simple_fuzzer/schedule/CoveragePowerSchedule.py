@@ -24,9 +24,10 @@ class CoveragePowerSchedule(PowerSchedule):
         # for seed in population:
         #     seed.energy = len(seed.coverage)
         for seed in population:
-            novelty_score = self.novelty_scores.get(get_path_id(seed.coverage), 0) 
+            # FIXME: load seed coverage
+            novelty_score = self.novelty_scores.get(get_path_id(seed.load_coverage()), 0) 
             if novelty_score == 0:
-                freq = self.path_frequency[get_path_id(seed.coverage)]
+                freq = self.path_frequency[get_path_id(seed.load_coverage())]
                 novelty_score = 1 / freq
             seed.energy = novelty_score
             # print(seed.energy)
