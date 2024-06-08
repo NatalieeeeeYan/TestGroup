@@ -48,9 +48,9 @@ if __name__ == "__main__":
     if not os.path.exists(seeds_folder):
         os.makedirs(seeds_folder)
     
+    # Store initial seeds
     seeds = []
     for init_data in init_seed_data:
-        # seeds.append(Seed(data=init_data, _coverage=set(), path="corpus/corpus_4", directory=SEED_DIRECTORY))
         hash_value = get_md5_of_object(obj=init_data)
         path = os.path.join(seeds_folder, hash_value + ".seed")
         dump_object(path=path, data=init_data)

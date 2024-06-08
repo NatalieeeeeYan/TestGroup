@@ -45,7 +45,13 @@ class Seed:
     __repr__ = __str__
 
     def save(self, data: str, coverage: Set[Location], directory: str = './seeds') -> None:
-        """Save the seed to disk"""
+        '''
+        @params: data: data of this seed
+        @params: coverage: coverage of this seed
+        @params: directory: directory of seeds storage
+
+        @desc: Save seed data & coverage to disk. 
+        '''
         # if not os.path.exists(directory):
         #     os.makedirs(directory)
         # self.path = os.path.join(directory, self.path.split('/')[-1])
@@ -56,7 +62,9 @@ class Seed:
         logger.info(f"Seed saved to {self.path}")
     
     def load_data(self) -> str:
-        """Load the seed from disk"""
+        '''
+        @desc: Load seed data from disk. 
+        '''
         if not os.path.exists(self.path):
             logger.warning("Seed path is not set. Nothing to load.")
             raise(FileNotFoundError(f"Seed file not found: {self.path}"))
@@ -68,7 +76,9 @@ class Seed:
         return data
 
     def load_coverage(self) -> str:
-        """Load the seed coverage from disk"""
+        '''
+        @desc: Load seed coverage from disk. 
+        '''
         if not os.path.exists(self.path):
             logger.warning("Seed path is not set. Nothing to load.")
             raise(FileNotFoundError(f"Seed file not found: {self.path}"))

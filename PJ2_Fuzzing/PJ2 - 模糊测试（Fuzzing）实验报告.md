@@ -91,3 +91,6 @@ ddl：1-3 6/1之前，4 6/16之前
 
 ### 4.1 Seeds 持久化
 
+核心思路：懒加载，在 `Seed` 对象中记录该 `seed` 的存储路径，当且仅当在需要使用seed（data/coverage）时才读取文件中的数据，对 `seed.data` 和 `seed.coverage` 分别提供获取接口。
+
+代码修改：在 `Seed.py` 中新增了 `seed.load_data()`、`seed.load_coverage()` 和 `seed.store()` 方法，用于读取和存储 `seed` 对应的数据、覆盖路径。
