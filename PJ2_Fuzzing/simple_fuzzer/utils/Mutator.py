@@ -24,27 +24,62 @@ def flip_random_bits(s: str) -> str:
     从 s 中随机挑选一个 bit，将其与其后面 N - 1 位翻转（翻转即 0 -> 1; 1 -> 0）
     注意：不要越界
     """
-    binary_string = ""
-    for char in s:
-        # 将字符转换为ASCII码，然后将ASCII码转换为二进制字符串
-        binary_char = bin(ord(char))[2:].zfill(8)  
-        binary_string += binary_char
+    # 将字符串转换为二进制字符串
+    binary_string = ''.join([bin(ord(char))[2:].zfill(8) for char in s])
+
     N = random.choice([1, 2, 4])
     pos = random.randint(0, len(binary_string) - N)
+
+    # print(f"Flipping {N} bits at position {pos}")
+
+    # 翻转选定位置的位
     flip_bits = binary_string[pos:pos + N]
     flip_bits = ''.join(['1' if bit == '0' else '0' for bit in flip_bits])
     binary_string = binary_string[:pos] + flip_bits + binary_string[pos + N:]
-    s = ''
+
+    # 将二进制字符串转换回字符
+    result = []
     for i in range(0, len(binary_string), 8):
+        byte = binary_string[i:i + 8]
+        if len(byte) < 8:
+            # print(f"Incomplete byte at position {i}, ignoring: {byte}")
+            continue
+        b = int(byte, 2)
         # 检查是否越界
-        b = int(binary_string[i:i + 8], 2)
         if b < 32:
             b = 32
         elif b > 127:
             b = 127
-        s += chr(b)
-    return s
+        result.append(chr(b))
 
+    return ''.join(result)
+
+# def flip_random_bits(s: str) -> str:
+#     """
+#     基于 AFL 变异算法策略中的 bitflip 与 random havoc 实现相邻 N 位翻转（N = 1, 2, 4），其中 N 为随机生成
+#     从 s 中随机挑选一个 bit，将其与其后面 N - 1 位翻转（翻转即 0 -> 1; 1 -> 0）
+#     注意：不要越界
+#     """
+#     binary_string = ""
+#     for char in s:
+#         # 将字符转换为ASCII码，然后将ASCII码转换为二进制字符串
+#         binary_char = bin(ord(char))[2:].zfill(8)  
+#         binary_string += binary_char
+#     N = random.choice([1, 2, 4])
+#     pos = random.randint(0, len(binary_string) - N)
+#     flip_bits = binary_string[pos:pos + N]
+#     flip_bits = ''.join(['1' if bit == '0' else '0' for bit in flip_bits])
+#     binary_string = binary_string[:pos] + flip_bits + binary_string[pos + N:]
+#     s = ''
+#     for i in range(0, len(binary_string), 8):
+#         # 检查是否越界
+#         b = int(binary_string[i:i + 8], 2)
+#         if b < 32:
+#             b = 32
+#         elif b > 127:
+#             b = 127
+#         s += chr(b)
+#     return s
 
 def arithmetic_random_bytes(s: str) -> str:
     """
@@ -172,6 +207,51 @@ def change_case(s: str) -> str:
             s = s[:pos + i] + char.swapcase() + s[pos + i + 1:]
     return s
 
+################################################## 以下为html mutator ##########################################################
+
+def insert_random_html_tag(s: str) -> str:
+    html_tags = ["<div>", "</div>", "<span>", "</span>", "<p>", "</p>", "<a>", "</a>", "<script>", "</script>", "<style>", "</style>"]
+    pos = random.randint(0, len(s))
+    tag = random.choice(html_tags)
+    return s[:pos] + tag + s[pos:]
+
+def delete_random_html_tag(s: str) -> str:
+    html_tags = ["<div>", "</div>", "<span>", "</span>", "<p>", "</p>", "<a>", "</a>", "<script>", "</script>", "<style>", "</style>"]
+    for tag in html_tags:
+        start = s.find(tag)
+        if start != -1:
+            return s[:start] + s[start + len(tag):]
+    return s
+
+def replace_random_html_tag(s: str) -> str:
+    html_tags = ["<div>", "</div>", "<span>", "</span>", "<p>", "</p>", "<a>", "</a>", "<script>", "</script>", "<style>", "</style>"]
+    for existing_tag in html_tags:
+        if existing_tag in s:
+            new_tag = random.choice(html_tags)
+            return s.replace(existing_tag, new_tag, 1)
+    return s
+
+def insert_random_html_attribute(s: str) -> str:
+    html_attributes = ["id", "class", "href", "style", "src"]
+    pos = random.randint(0, len(s))
+    attribute = random.choice(html_attributes)
+    value = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=5))
+    return s[:pos] + f' {attribute}="{value}" ' + s[pos:]
+
+def insert_random_html_entity(s: str) -> str:
+    html_entities = ["&amp;", "&lt;", "&gt;", "&quot;", "&apos;"]
+    pos = random.randint(0, len(s))
+    entity = random.choice(html_entities)
+    return s[:pos] + entity + s[pos:]
+
+def insert_random_javascript(s: str) -> str:
+    js_code = "<script>console.log('test');</script>"
+    pos = random.randint(0, len(s))
+    return s[:pos] + js_code + s[pos:]
+
+def change_html_structure(s: str) -> str:
+    pos1, pos2 = sorted(random.sample(range(len(s)), 2))
+    return s[:pos1] + s[pos2:] + s[pos1:pos2]
 
 class Mutator:
 
@@ -186,6 +266,13 @@ class Mutator:
             havoc_random_replace,
             delete_random_bytes,
             change_case
+            # insert_random_html_tag,
+            # delete_random_html_tag,
+            # replace_random_html_tag,
+            # insert_random_html_attribute,
+            # insert_random_html_entity,
+            # insert_random_javascript,
+            # change_html_structure
         ]
 
     def mutate(self, inp: Any) -> Any:

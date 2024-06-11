@@ -40,9 +40,9 @@ class Result:
 if __name__ == "__main__":
     
     # change seed path here: 
-    f_runner = FunctionCoverageRunner(sample4)
-    init_path = "corpus/corpus_4"
-    init_seed_data = load_object("corpus/corpus_4")
+    f_runner = FunctionCoverageRunner(sample3)
+    init_path = "corpus/corpus_3"
+    init_seed_data = load_object("corpus/corpus_3")    
 
     seeds_folder = os.path.join(SEED_DIRECTORY, init_path.split('/')[-1])
     if not os.path.exists(seeds_folder):
