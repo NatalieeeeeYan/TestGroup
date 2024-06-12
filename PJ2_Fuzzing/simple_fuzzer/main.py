@@ -40,9 +40,9 @@ class Result:
 if __name__ == "__main__":
     
     # change seed path here: 
-    f_runner = FunctionCoverageRunner(sample3)
-    init_path = "corpus/corpus_3"
-    init_seed_data = load_object("corpus/corpus_3")    
+    f_runner = FunctionCoverageRunner(sample4)
+    init_path = "corpus/corpus_4"
+    init_seed_data = load_object("corpus/corpus_4")    
 
     seeds_folder = os.path.join(SEED_DIRECTORY, init_path.split('/')[-1])
     if not os.path.exists(seeds_folder):
@@ -60,7 +60,7 @@ if __name__ == "__main__":
     # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(8), is_print=True)
     grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=CoveragePowerSchedule(), is_print=True, seed_directory=seeds_folder)
     start_time = time.time()
-    grey_fuzzer.runs(f_runner, run_time=600)
+    grey_fuzzer.runs(f_runner, run_time=3600)
     res = Result(grey_fuzzer.covered_line, set(grey_fuzzer.crash_map.values()), start_time, time.time())
     
     # 注意不要覆盖1-3的结果
