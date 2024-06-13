@@ -2,7 +2,7 @@ import math
 import random
 import struct
 from typing import Any
-
+import re
 # xby 注解：看起来seed里都是ascii的字符，所以bit操作需要先进行转换，而一个字符对应一个byte。
 # 127：DEL。但不知道为什么这里保留了这个范围。
 
@@ -13,9 +13,8 @@ def insert_random_character(s: str) -> str:
     插入的 byte 为随机生成，范围为 [32, 127]
     """
     pos = random.randint(0, len(s))
-    insert_byte = random.randint(32, 127)
-    s = s[:pos] + struct.pack('B', insert_byte).decode() + s[pos:]
-    return s
+    random_character = chr(random.randrange(32, 127))
+    return s[:pos] + random_character + s[pos:]
 
 
 def flip_random_bits(s: str) -> str:
@@ -24,25 +23,16 @@ def flip_random_bits(s: str) -> str:
     从 s 中随机挑选一个 bit，将其与其后面 N - 1 位翻转（翻转即 0 -> 1; 1 -> 0）
     注意：不要越界
     """
-    binary_string = ""
-    for char in s:
-        # 将字符转换为ASCII码，然后将ASCII码转换为二进制字符串
-        binary_char = bin(ord(char))[2:].zfill(8)  
-        binary_string += binary_char
+    if s == "":
+        return insert_random_character(s)
+
+    def FLIP_BITS(buf: str, index: int) -> str:
+        return buf[:(index >> 3)] + chr(ord(buf[index >> 3]) ^ (128 >> (index & 7))) + buf[(index >> 3) + 1:]
+
     N = random.choice([1, 2, 4])
-    pos = random.randint(0, len(binary_string) - N)
-    flip_bits = binary_string[pos:pos + N]
-    flip_bits = ''.join(['1' if bit == '0' else '0' for bit in flip_bits])
-    binary_string = binary_string[:pos] + flip_bits + binary_string[pos + N:]
-    s = ''
-    for i in range(0, len(binary_string), 8):
-        # 检查是否越界
-        b = int(binary_string[i:i + 8], 2)
-        if b < 32:
-            b = 32
-        elif b > 127:
-            b = 127
-        s += chr(b)
+    pos = random.randint(0, len(s) * 8 - N)
+    for i in range(N):
+        s = FLIP_BITS(s, pos + i)
     return s
 
 
@@ -54,24 +44,24 @@ def arithmetic_random_bytes(s: str) -> str:
         2. 将 num1 加上一个 [-35, 35] 的随机数，得到 num2；
         3. 用 num2 所表示的 byte 替换该 byte
     从 s 中随机挑选一个 byte，将其与其后面 N - 1 个 bytes 进行字节随机增减
-    注意：不要越界；如果出现单个字节在添加随机数之后，可以通过取模操作使该字节落在 [32, 127] 之间  # 修改了范围
+    注意：不要越界；如果出现单个字节在添加随机数之后，可以通过取模操作使该字节落在 [0, 255] 之间
     """
-    N = random.choice([1, 2, 4])
-    # pos = random.randint(0, len(s) - N)
-    if len(s) - N > 0:
-        pos = random.randint(0, len(s) - N)
-    else:
-        pos = 0
-    # for i in range(N):
-    index = min(N, len(s))
-    for i in range(index):
-        num1 = ord(s[pos + i])
-        num2 = num1 + random.randint(-35, 35)
-        if num2 < 32:
-            num2 = 32
-        elif num2 > 127:
-            num2 = 127
-        s = s[:pos + i] + struct.pack('B', num2).decode() + s[pos + i + 1:]
+    if s == "":
+        return insert_random_character(s)
+
+    max_pow = min(math.floor(math.log2(len(s))), 2)
+    p = random.randint(0, max_pow)
+    N = pow(2, p)
+
+    def ARITH_BYTES(buf: str, index: int) -> str:
+        num = ord(buf[index])
+        rand = random.choice([-1, 1]) * random.randint(1, 35)
+        num = (num + rand + 256) % 256
+        return buf[:index] + chr(num) + buf[index + 1:]
+
+    pos = random.randint(0, len(s) - N)
+    for i in range(N):
+        s = ARITH_BYTES(s, pos + i)
     return s
 
 
@@ -83,27 +73,34 @@ def interesting_random_bytes(s: str) -> str:
         2. 随机挑选 s 中相邻连续的 1, 2, 4 bytes，将其替换为相应 interesting_value 数组中的随机元素；
     注意：不要越界
     """
-    interesting_values = [
-        [127],
-        [36],
-        [32],
-        [127, 127], 
-        [32, 32], 
-        [36, 36],
-        [127, 127, 127, 127],
-        [32, 32, 32, 32],
-        [36, 36, 36, 36]
-    ]
-    pick = random.choice(interesting_values)
-    N = len(pick)
-    # pos = random.randint(0, len(s) - N)
-    if len(s) - N > 0:
-        pos = random.randint(0, len(s) - N)
-    else:
-        pos = 0
-    s = s[:pos] + ''.join([struct.pack('B', byte).decode() for byte in pick]) + s[pos + N:]
-    return s
+    if s == "":
+        return insert_random_character(s)
 
+    INTERESTING8 = [-128, -1, 16, 32, 64, 100, 127]
+    INTERESTING16 = [-32768, -129, 128, 255, 256, 512, 1000, 1024, 4096, 32767] + INTERESTING8
+    INTERESTING32 = [-2147483648, -100663046, -32769, 32768, 65535, 65536, 100663045, 2147483647] + INTERESTING16
+
+    max_pow = min(math.floor(math.log2(len(s))), 2)
+    p = random.randint(0, max_pow)
+    N = pow(2, p)
+
+    def INTERESTING_BYTES(buf: str, index: int, N: int) -> str:
+        if N == 1:
+            interesting_value = random.choice(INTERESTING8)
+            bytes_data = struct.pack('b', interesting_value)
+            return buf[:index] + str(bytes_data) + buf[index + 1:]
+        if N == 2:
+            interesting_value = random.choice(INTERESTING16)
+            bytes_data = struct.pack('>h', interesting_value)
+            return buf[:index] + str(bytes_data) + buf[index + 2:]
+        if N == 4:
+            interesting_value = random.choice(INTERESTING32)
+            bytes_data = struct.pack('>i', interesting_value)
+            return buf[:index] + str(bytes_data) + buf[index + 4:]
+
+    pos = random.randint(0, len(s) - N)
+    s = INTERESTING_BYTES(s, pos, N)
+    return s
 
 def havoc_random_insert(s: str):
     """
@@ -172,6 +169,83 @@ def change_case(s: str) -> str:
             s = s[:pos + i] + char.swapcase() + s[pos + i + 1:]
     return s
 
+################################################## 以下为html mutator ##########################################################
+
+def insert_random_html_tag(s: str) -> str:
+    html_tags = ["<div>", "</div>", "<span>", "</span>", "<p>", "</p>", "<a>", "</a>", "<script>", "</script>", "<style>", "</style>"]
+    pos = random.randint(0, len(s))
+    tag = random.choice(html_tags)
+    return s[:pos] + tag + s[pos:]
+
+def delete_random_html_tag(s: str) -> str:
+    html_tags = ["<div>", "</div>", "<span>", "</span>", "<p>", "</p>", "<a>", "</a>", "<script>", "</script>", "<style>", "</style>"]
+    for tag in html_tags:
+        start = s.find(tag)
+        if start != -1:
+            return s[:start] + s[start + len(tag):]
+    return s
+
+def replace_random_html_tag(s: str) -> str:
+    html_tags = ["<div>", "</div>", "<span>", "</span>", "<p>", "</p>", "<a>", "</a>", "<script>", "</script>", "<style>", "</style>"]
+    for existing_tag in html_tags:
+        if existing_tag in s:
+            new_tag = random.choice(html_tags)
+            return s.replace(existing_tag, new_tag, 1)
+    return s
+
+def insert_random_html_attribute(s: str) -> str:
+    html_attributes = ["id", "class", "href", "style", "src"]
+    pos = random.randint(0, len(s))
+    attribute = random.choice(html_attributes)
+    value = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=5))
+    return s[:pos] + f' {attribute}="{value}" ' + s[pos:]
+
+def insert_random_html_entity(s: str) -> str:
+    html_entities = ["&amp;", "&lt;", "&gt;", "&quot;", "&apos;"]
+    pos = random.randint(0, len(s))
+    entity = random.choice(html_entities)
+    return s[:pos] + entity + s[pos:]
+
+def insert_random_javascript(s: str) -> str:
+    js_code = "<script>console.log('test');</script>"
+    pos = random.randint(0, len(s))
+    return s[:pos] + js_code + s[pos:]
+
+def change_html_structure(s: str) -> str:
+    pos1, pos2 = sorted(random.sample(range(len(s)), 2))
+    return s[:pos1] + s[pos2:] + s[pos1:pos2]
+
+def radical_mutate_document_structure(s: str) -> str:
+    tags = re.findall(r'<[^>]+>', s)
+    
+    if not tags:
+        return s
+    
+    # 随机重排标签
+    if random.choice([True, False]):
+        random.shuffle(tags)
+        s = ''.join(tags)
+    
+    # 随机嵌套和复制标签
+    if random.choice([True, False]):
+        selected_tag = random.choice(tags)
+        times = random.randint(1, 3)  # 复制1到3次
+        insertion_point = random.randint(0, len(s))
+        s = s[:insertion_point] + (selected_tag * times) + s[insertion_point:]
+    
+    # 完全删除主要结构
+    if random.choice([True, False]):
+        for tag in ['<html>', '<head>', '<body>']:
+            s = s.replace(tag, '')  # 删除开标签
+            s = s.replace(tag.replace('<', '</'), '')  # 删除闭标签
+
+    # 随机插入无效标签和属性
+    if random.choice([True, False]):
+        fake_tags = ['<fake>', '<nonsense nonsense="true">']
+        insertion_point = random.randint(0, len(s))
+        s = s[:insertion_point] + random.choice(fake_tags) + s[insertion_point:]
+        
+    return s
 
 class Mutator:
 
@@ -185,9 +259,20 @@ class Mutator:
             havoc_random_insert,
             havoc_random_replace,
             delete_random_bytes,
-            change_case
+            change_case,
+            radical_mutate_document_structure
+            # insert_random_html_tag,
+            # delete_random_html_tag,
+            # replace_random_html_tag,
+            # insert_random_html_attribute,
+            # insert_random_html_entity,
+            # insert_random_javascript,
+            # change_html_structure
         ]
 
     def mutate(self, inp: Any) -> Any:
         mutator = random.choice(self.mutators)
+        # for _ in range(random.randint(1, 3)):  # 每次调用 1 到 3 个变异操作
+        #     mutator = random.choice(self.mutators)
+        #     inp = mutator(inp)
         return mutator(inp)

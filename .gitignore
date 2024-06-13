@@ -10,3 +10,11 @@ Pj1/SoftwareTestingDemo/src/main/resources/application.yml
 pj1/SoftwareTestingDemo/target/ 
 
 PJ2_Fuzzing/simple_fuzzer/README.pdf
+PJ2_Fuzzing/simple_fuzzer/seeds/
+PJ2_Fuzzing/simple_fuzzer/logs/
+PJ2_Fuzzing/simple_fuzzer/fuzzer/__pycache__
+PJ2_Fuzzing/simple_fuzzer/runner/__pycache__
+PJ2_Fuzzing/simple_fuzzer/schedule/__pycache__
+PJ2_Fuzzing/simple_fuzzer/utils/__pycache__
+PJ2_Fuzzing/simple_fuzzer/samples/__pycache__
+

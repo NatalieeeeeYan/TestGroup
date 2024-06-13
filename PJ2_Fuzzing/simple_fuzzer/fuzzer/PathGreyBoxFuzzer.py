@@ -9,10 +9,10 @@ from runner.FunctionCoverageRunner import FunctionCoverageRunner
 class PathGreyBoxFuzzer(GreyBoxFuzzer):
     """Count how often individual paths are exercised."""
 
-    def __init__(self, seeds: List[str], schedule: PathPowerSchedule, is_print: bool):
-        super().__init__(seeds, schedule, False)
-
-        # TODO
+    def __init__(self, seeds: List[str], schedule: PathPowerSchedule, is_print: bool, seed_directory: str = './seeds'):
+        super().__init__(seeds, schedule, is_print, seed_directory=seed_directory)
+        self.start_time = time.time()
+        self.last_crash_time = self.start_time
 
         print("""
 ┌───────────────────────┬───────────────────────┬───────────────────────┬───────────────────┬───────────────────┬────────────────┬───────────────────┐
@@ -41,7 +41,8 @@ class PathGreyBoxFuzzer(GreyBoxFuzzer):
         """Inform scheduler about path frequency"""
        
         result, outcome = super().run(runner)
-        # TODO
+
+        # 更新路径频率
         path_id = get_path_id(runner.coverage())
         if path_id not in self.schedule.path_frequency:
             self.schedule.path_frequency[path_id] = 1
@@ -49,6 +50,7 @@ class PathGreyBoxFuzzer(GreyBoxFuzzer):
         else:
             self.schedule.path_frequency[path_id] += 1
 
+        # 更新新覆盖率
         if self.new_coverage:
             new_path_id = get_path_id(self.new_coverage)
             if new_path_id not in self.schedule.novelty_scores:

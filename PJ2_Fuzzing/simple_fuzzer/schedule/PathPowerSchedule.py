@@ -26,5 +26,6 @@ class PathPowerSchedule(PowerSchedule):
         """Assign exponential energy inversely proportional to path frequency"""
         # TODO
         for seed in population:
-            freq = self.path_frequency[get_path_id(seed.coverage)]
+            # FIXME: load seed coverage
+            freq = self.path_frequency[get_path_id(seed.load_coverage())]
             seed.energy = 1 / (freq ** self.exp)
