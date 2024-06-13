@@ -60,11 +60,11 @@ if __name__ == "__main__":
     # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(8), is_print=True)
     grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=CoveragePowerSchedule(), is_print=True, seed_directory=seeds_folder)
     start_time = time.time()
-    grey_fuzzer.runs(f_runner, run_time=3600)
+    grey_fuzzer.runs(f_runner, run_time=600)
     res = Result(grey_fuzzer.covered_line, set(grey_fuzzer.crash_map.values()), start_time, time.time())
     
     # 注意不要覆盖1-3的结果
-    dump_object("_result" + os.sep + "Sample-4.pkl", res)
-    print(load_object("_result" + os.sep + "Sample-4.pkl"))
+    dump_object("_result" + os.sep + "Sample-4-test.pkl", res)
+    print(load_object("_result" + os.sep + "Sample-4-test.pkl"))
     end_time = time.time()
     print(f'Finished with time: {end_time - start_time}')
