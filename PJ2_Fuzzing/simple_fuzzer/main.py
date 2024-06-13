@@ -5,6 +5,7 @@ from fuzzer.PathGreyBoxFuzzer import PathGreyBoxFuzzer
 from runner.FunctionCoverageRunner import FunctionCoverageRunner
 from schedule.PathPowerSchedule import PathPowerSchedule
 from schedule.CoveragePowerSchedule import CoveragePowerSchedule
+from schedule.MyPathPowerSchedule import MyPathPowerSchedule
 from samples.Samples import sample1, sample2, sample3, sample4
 from utils.ObjectUtils import dump_object, load_object
 
@@ -24,10 +25,11 @@ if __name__ == "__main__":
     f_runner = FunctionCoverageRunner(sample4)
     seeds = load_object("corpus/corpus_4")
 
-    # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(8), is_print=True)
-    grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=CoveragePowerSchedule(), is_print=True)
+    # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(10), is_print=True)
+    grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=MyPathPowerSchedule(10), is_print=True)
+    # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=CoveragePowerSchedule(), is_print=True)
     start_time = time.time()
-    grey_fuzzer.runs(f_runner, run_time=600)
+    grey_fuzzer.runs(f_runner, run_time=300)
     res = Result(grey_fuzzer.covered_line, set(grey_fuzzer.crash_map.values()), start_time, time.time())
     dump_object("_result" + os.sep + "Sample-4.pkl", res)
     print(load_object("_result" + os.sep + "Sample-4.pkl"))
