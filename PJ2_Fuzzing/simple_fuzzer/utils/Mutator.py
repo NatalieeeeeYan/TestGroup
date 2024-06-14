@@ -212,6 +212,8 @@ def insert_random_javascript(s: str) -> str:
     return s[:pos] + js_code + s[pos:]
 
 def change_html_structure(s: str) -> str:
+    if len(s) < 2:
+        return s
     pos1, pos2 = sorted(random.sample(range(len(s)), 2))
     return s[:pos1] + s[pos2:] + s[pos1:pos2]
 
@@ -247,6 +249,35 @@ def radical_mutate_document_structure(s: str) -> str:
         
     return s
 
+def truncate_randomly(s: str) -> str:
+    """随机截断字符串"""
+    if len(s) <= 1:
+        return s
+    trunc_pos = random.randint(1, len(s) - 1)
+    return s[:trunc_pos]
+
+def insert_xss_script_tag(html: str) -> str:
+    """
+    在 HTML 文本中随机位置插入包含恶意 JavaScript 的 <script> 标签
+    """
+    script_content = generate_malicious_script()
+    position = random.randint(0, len(html))
+    
+    # 插入 <script> 标签
+    mutated_html = html[:position] + f"<script>{script_content}</script>" + html[position:]
+    
+    return mutated_html
+
+def generate_malicious_script() -> str:
+    """
+    生成包含恶意 JavaScript 代码的字符串
+    """
+    # 这里可以编写恶意 JavaScript 代码，例如窃取 cookie 信息或者执行恶意操作
+    malicious_code = "alert('XSS attack!');"
+    
+    return malicious_code
+
+
 class Mutator:
 
     def __init__(self) -> None:
@@ -260,14 +291,16 @@ class Mutator:
             havoc_random_replace,
             delete_random_bytes,
             change_case,
-            radical_mutate_document_structure
-            # insert_random_html_tag,
-            # delete_random_html_tag,
-            # replace_random_html_tag,
-            # insert_random_html_attribute,
-            # insert_random_html_entity,
-            # insert_random_javascript,
-            # change_html_structure
+            radical_mutate_document_structure, 
+            insert_random_html_tag,
+            delete_random_html_tag,
+            replace_random_html_tag,
+            insert_random_html_attribute,
+            insert_random_html_entity,
+            insert_random_javascript,
+            change_html_structure, 
+            truncate_randomly, 
+            insert_xss_script_tag
         ]
 
     def mutate(self, inp: Any) -> Any:
