@@ -28,20 +28,25 @@ def flip_random_bits(s: str) -> str:
     if not s:
         return insert_random_character(s)
     
-    def bit_flip(buffer: str, bit_pos: int) -> str:
-        byte_index = bit_pos // 8
-        bit_index = bit_pos % 8
-        flipped_byte = chr(ord(buffer[byte_index]) ^ (1 << (7 - bit_index)))
-        return buffer[:byte_index] + flipped_byte + buffer[byte_index + 1:]
-
-    bit_lengths = [1, 2, 4]
-    flip_length = random.choice(bit_lengths)
-    max_bit_pos = len(s) * 8 - flip_length
-    start_bit = random.randint(0, max_bit_pos)
-
-    for bit in range(start_bit, start_bit + flip_length):
-        s = bit_flip(s, bit)
-    
+    binary_string = ""
+    for char in s:
+        # 将字符转换为ASCII码，然后将ASCII码转换为二进制字符串
+        binary_char = bin(ord(char))[2:].zfill(8)  
+        binary_string += binary_char
+    N = random.choice([1, 2, 4])
+    pos = random.randint(0, len(binary_string) - N)
+    flip_bits = binary_string[pos:pos + N]
+    flip_bits = ''.join(['1' if bit == '0' else '0' for bit in flip_bits])
+    binary_string = binary_string[:pos] + flip_bits + binary_string[pos + N:]
+    s = ''
+    for i in range(0, len(binary_string), 8):
+        # 检查是否越界
+        b = int(binary_string[i:i + 8], 2)
+        if b < 32:
+            b = 32
+        elif b > 127:
+            b = 127
+        s += chr(b)
     return s
 
 
@@ -58,19 +63,13 @@ def arithmetic_random_bytes(s: str) -> str:
     if not s:
         return insert_random_character(s)
 
-    max_power = min(math.floor(math.log2(len(s))), 2)
-    power_choice = random.randint(0, max_power)
-    byte_count = 2 ** power_choice
-
-    def mutate_byte(data: str, pos: int) -> str:
-        original_byte_value = ord(data[pos])
-        random_adjustment = random.choice([-1, 1]) * random.randint(1, 35)
-        new_byte_value = (original_byte_value + random_adjustment + 256) % 256
-        return data[:pos] + chr(new_byte_value) + data[pos + 1:]
-
-    start_pos = random.randint(0, len(s) - byte_count)
-    for offset in range(byte_count):
-        s = mutate_byte(s, start_pos + offset)
+    possible_lengths = [n for n in [1, 2, 4] if n <= len(s)]
+    N= random.choice(possible_lengths)
+    pos = random.randint(0, len(s) - N)
+    for i in range(N):
+        num1 = ord(s[pos + i])
+        num2 = (num1 + random.choice([-1, 1]) * random.randint(1, 35) + 256) % 256
+        s = s[:pos + i] + chr(num2) + s[pos + i + 1:]
     return s
 
 
@@ -85,30 +84,27 @@ def interesting_random_bytes(s: str) -> str:
     if not s:
         return insert_random_character(s)
 
-    interesting_values_8bit = [-128, -1, 16, 32, 64, 100, 127]
+    interesting_values_8bit = [-128, -1, 0 , 1,  16, 60, 62, 32, 64, 100, 127] # 针对html 增加了一些值
     interesting_values_16bit = [-32768, -129, 128, 255, 256, 512, 1000, 1024, 4096, 32767] + interesting_values_8bit
     interesting_values_32bit = [-2147483648, -100663046, -32769, 32768, 65535, 65536, 100663045, 2147483647] + interesting_values_16bit
 
-    max_pow = min(math.floor(math.log2(len(s))), 2)
-    power_choice = random.randint(0, max_pow)
-    num_bytes = 2 ** power_choice
+    possible_lengths = [n for n in [1, 2, 4] if n <= len(s)]
+    N= random.choice(possible_lengths)
+    
+    pos = random.randint(0, len(s) - N)
+    if N == 1:
+        value = random.choice(interesting_values_8bit)
+        byte_data = struct.pack('b', value)
+        s = s[:pos] + byte_data.decode(errors='ignore') + s[pos + 1:]
+    elif N == 2:
+        value = random.choice(interesting_values_16bit)
+        byte_data = struct.pack('>h', value)
+        s = s[:pos] + byte_data.decode(errors='ignore') + s[pos + 2:]
+    elif N == 4:
+        value = random.choice(interesting_values_32bit)
+        byte_data = struct.pack('>i', value)
+        s = s[:pos] + byte_data.decode(errors='ignore') + s[pos + 4:]
 
-    def apply_interesting_value(buffer: str, position: int, num_bytes: int) -> str:
-        if num_bytes == 1:
-            value = random.choice(interesting_values_8bit)
-            byte_data = struct.pack('b', value)
-            return buffer[:position] + byte_data.decode(errors='ignore') + buffer[position + 1:]
-        elif num_bytes == 2:
-            value = random.choice(interesting_values_16bit)
-            byte_data = struct.pack('>h', value)
-            return buffer[:position] + byte_data.decode(errors='ignore') + buffer[position + 2:]
-        elif num_bytes == 4:
-            value = random.choice(interesting_values_32bit)
-            byte_data = struct.pack('>i', value)
-            return buffer[:position] + byte_data.decode(errors='ignore') + buffer[position + 4:]
-
-    start_position = random.randint(0, len(s) - num_bytes)
-    s = apply_interesting_value(s, start_position, num_bytes)
     return s
 
 def havoc_random_insert(s: str):
@@ -330,7 +326,7 @@ class Mutator:
             # change_html_structure,
             # addLbr,
             # change_encode,
-            # my_insert,
+            my_insert,
         ]
 
     def mutate(self, inp: Any) -> Any:

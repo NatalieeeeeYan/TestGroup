@@ -104,6 +104,15 @@ ddl：1-3 6/1之前，4 6/16之前
 
     实现思路：通过随机重排、嵌套、复制、删除和插入无效HTML标签，对输入的HTML文档结构进行变异。具体步骤包括提取所有标签，随机重排标签顺序，随机复制并插入标签，删除主要结构标签（如`<html>`、`<head>`、`<body>`），以及插入无效标签。目的是生成一个结构变异的HTML文档。
 
+4. my_insert
+    ```python
+    def my_insert(s: str) -> str:
+        pos = random.randint(0, len(s))
+        chars = ["<", ">", "<!"]
+        random_character = random.choice(chars)
+        return s[:pos] + random_character + s[pos:]
+    ```
+    实现思路：在随机位置插入`<`、`>`或`<!`字符，以变异输入字符串。针对HTLML文档，插入这些字符可能会导致解析错误，从而引发更多的crash。
 
 ## 三、Schedule
 
