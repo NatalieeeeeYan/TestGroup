@@ -10,7 +10,7 @@
 | 许博雅 |             |                                 |              |
 |  李博  |             |                                 |              |
 | 黄秋瑞 |             |                                 |              |
-| 钟思祺 |             |                                 |              |
+| 钟思祺 | 21302010069 | 修改mutator策略，尝试达到更高的crash和covered line |              |
 | 宋文彦 | 21302010062 | 完成Seed磁盘持久化，全流程debug |              |
 
 ##### 内容：
@@ -65,6 +65,44 @@ ddl：1-3 6/1之前，4 6/16之前
     ```
 
     实现思路：这个 Mutator 是用于随机选取字符串中的N个字节，然后将该位置的字母字符转换为大写或小写。首先随机选择一个位置，然后在这个位置上执行大小写转换操作，如果这个位置的字符是字母字符，则执行转换，否则不进行操作。这样可以保留非字母字符的不变性，只对字母字符进行大小写转换。
+
+3. mutate_document_structure
+
+    ```python
+    def mutate_document_structure(s: str) -> str:
+        tags = re.findall(r'<[^>]+>', s)
+        
+        if not tags:
+            return s
+        
+        # 随机重排标签
+        if random.choice([True, False]):
+            random.shuffle(tags)
+            s = ''.join(tags)
+        
+        # 随机嵌套和复制标签
+        if random.choice([True, False]):
+            selected_tag = random.choice(tags)
+            times = random.randint(1, 3)  # 复制1到3次
+            insertion_point = random.randint(0, len(s))
+            s = s[:insertion_point] + (selected_tag * times) + s[insertion_point:]
+        
+        # 完全删除主要结构
+        if random.choice([True, False]):
+            for tag in ['<html>', '<head>', '<body>']:
+                s = s.replace(tag, '')  # 删除开标签
+                s = s.replace(tag.replace('<', '</'), '')  # 删除闭标签
+    
+        # 随机插入无效标签和属性
+        if random.choice([True, False]):
+            fake_tags = ['<fake>', '<nonsense nonsense="true">']
+            insertion_point = random.randint(0, len(s))
+            s = s[:insertion_point] + random.choice(fake_tags) + s[insertion_point:]
+            
+        return s
+    ```
+
+    实现思路：通过随机重排、嵌套、复制、删除和插入无效HTML标签，对输入的HTML文档结构进行变异。具体步骤包括提取所有标签，随机重排标签顺序，随机复制并插入标签，删除主要结构标签（如`<html>`、`<head>`、`<body>`），以及插入无效标签。目的是生成一个结构变异的HTML文档。
 
 
 ## 三、Schedule

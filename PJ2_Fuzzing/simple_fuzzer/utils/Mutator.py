@@ -217,7 +217,7 @@ def change_html_structure(s: str) -> str:
     pos1, pos2 = sorted(random.sample(range(len(s)), 2))
     return s[:pos1] + s[pos2:] + s[pos1:pos2]
 
-def radical_mutate_document_structure(s: str) -> str:
+def mutate_document_structure(s: str) -> str:
     tags = re.findall(r'<[^>]+>', s)
     
     if not tags:
@@ -291,7 +291,7 @@ class Mutator:
             havoc_random_replace,
             delete_random_bytes,
             change_case,
-            radical_mutate_document_structure, 
+            mutate_document_structure, 
             insert_random_html_tag,
             delete_random_html_tag,
             replace_random_html_tag,
