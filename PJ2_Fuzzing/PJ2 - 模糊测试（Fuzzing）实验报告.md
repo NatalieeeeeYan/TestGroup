@@ -8,10 +8,10 @@
 |  姓名  |    学号     |            工作内容             | 分工占比自评 |
 | :----: | :---------: | :-----------------------------: | :----------: |
 | 许博雅 |             |                                 |              |
-|  李博  |             |                                 |              |
-| 黄秋瑞 |             |                                 |              |
-| 钟思祺 |             |                                 |              |
-| 宋文彦 | 21302010062 | 完成Seed磁盘持久化，全流程debug |              |
+|  李博  | 21302010068 | 编写新的PowerSchedule，调整mutator尝试达到更多crash |              |
+| 黄秋瑞 | 21302010061 | 完成PathPowerSchedule、PathGreyBoxFuzzer |              |
+| 钟思祺 | 21302010069 | 修改mutator策略，尝试达到更高的crash和covered line |              |
+| 宋文彦 | 21302010062 | 完成Seed磁盘持久化，debug |              |
 
 ##### 内容：
 
@@ -66,22 +66,67 @@ ddl：1-3 6/1之前，4 6/16之前
 
     实现思路：这个 Mutator 是用于随机选取字符串中的N个字节，然后将该位置的字母字符转换为大写或小写。首先随机选择一个位置，然后在这个位置上执行大小写转换操作，如果这个位置的字符是字母字符，则执行转换，否则不进行操作。这样可以保留非字母字符的不变性，只对字母字符进行大小写转换。
 
+3. mutate_document_structure
+
+    ```python
+    def mutate_document_structure(s: str) -> str:
+        tags = re.findall(r'<[^>]+>', s)
+        
+        if not tags:
+            return s
+        
+        # 随机重排标签
+        if random.choice([True, False]):
+            random.shuffle(tags)
+            s = ''.join(tags)
+        
+        # 随机嵌套和复制标签
+        if random.choice([True, False]):
+            selected_tag = random.choice(tags)
+            times = random.randint(1, 3)  # 复制1到3次
+            insertion_point = random.randint(0, len(s))
+            s = s[:insertion_point] + (selected_tag * times) + s[insertion_point:]
+        
+        # 完全删除主要结构
+        if random.choice([True, False]):
+            for tag in ['<html>', '<head>', '<body>']:
+                s = s.replace(tag, '')  # 删除开标签
+                s = s.replace(tag.replace('<', '</'), '')  # 删除闭标签
+    
+        # 随机插入无效标签和属性
+        if random.choice([True, False]):
+            fake_tags = ['<fake>', '<nonsense nonsense="true">']
+            insertion_point = random.randint(0, len(s))
+            s = s[:insertion_point] + random.choice(fake_tags) + s[insertion_point:]
+            
+        return s
+    ```
+
+    实现思路：通过随机重排、嵌套、复制、删除和插入无效HTML标签，对输入的HTML文档结构进行变异。具体步骤包括提取所有标签，随机重排标签顺序，随机复制并插入标签，删除主要结构标签（如`<html>`、`<head>`、`<body>`），以及插入无效标签。目的是生成一个结构变异的HTML文档。
+
 
 ## 三、Schedule
 
 `在本章中，你需要阐述你新增编写的 Schedule 的实现思路,以下为示例`
 
-1. LevelPowerSchedule
+1. CoveragePowerSchedule
 
    ```python
-   class LevelPowerSchedule(Schedule):
+   class CoveragePowerSchedule(Schedule):
    
-       def assign_energy(self, population: Sequence[Seed]) -> None:
-           ...
+       def assign_energy(self, population: List[Seed]) -> None:
+        for seed in population:
+            novelty_score = self.novelty_scores.get(get_path_id(seed.load_coverage()), 0) 
+            if novelty_score == 0:
+                freq = self.path_frequency[get_path_id(seed.load_coverage())]
+                novelty_score = 1 / freq
+            seed.energy = novelty_score
    
    ```
 
-   实现思路：基于种子变异的层级...
+   实现思路：为覆盖到新路径的种子分配更高的能量。
+   在Fuzzer中获取每次新覆盖的路径，并将其出现次数记录在schedule的novelty_scores中：该新路径首次出现则赋值为1，多次出现则值++。分配种子能量时使用novelty_score代替path_frequency，对于新路径分配更高的能量，非新路径则使用频率的倒数，从而鼓励在新覆盖到的路径上进行探索。
+   
 
 ## 四、新增功能实现介绍
 
@@ -91,6 +136,6 @@ ddl：1-3 6/1之前，4 6/16之前
 
 ### 4.1 Seeds 持久化
 
-核心思路：懒加载，在 `Seed` 对象中记录该 `seed` 的存储路径，当且仅当在需要使用seed（data/coverage）时才读取文件中的数据，对 `seed.data` 和 `seed.coverage` 分别提供获取接口。
+主要思路：将所有 input 都以文件形式保存在`./seeds` 文件夹下。对所有 PASS 的 input，在 `Seed` 对象中记录该 `seed` 的存储路径（内存中仍然维护 `seed` 和 `energy` 的映射，`seed` 对象本身体量减小，减少内存负担）。在需要使用时（`scheduler` 选择好 `seed` 后）读取对应文件中的数据，对 `seed.data` 和 `seed.coverage` 分别提供获取接口。
 
-代码修改：在 `Seed.py` 中新增了 `seed.load_data()`、`seed.load_coverage()` 和 `seed.store()` 方法，用于读取和存储 `seed` 对应的数据、覆盖路径。
+代码修改：在 `Seed.py` 中新增了 `seed.load_data()`、`seed.load_coverage()` 和 `seed.store()` 方法，用于读取和存储 `seed` 对应的数据、覆盖路径。新增了 `save_seed()` 用于保存所有inputs。

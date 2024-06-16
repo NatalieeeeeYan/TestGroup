@@ -118,8 +118,10 @@ class GreyBoxFuzzer(Fuzzer):
                 logger.info(f"New seed added with coverage: {seed.id}")
         if outcome == Runner.FAIL:
             uniq_crash_num = len(set(self.crash_map.values()))
-            print(f"Crash found: {self.inp}")
+            # print(f"Crash found: {self.inp}")
             self.crash_map[self.inp] = result
+            # print(self.inp, result)
+            # print(len(self.inp), result)
             if len(set(self.crash_map.values())) != uniq_crash_num:
                 self.last_crash_time = time.time()
 

@@ -5,6 +5,7 @@ from fuzzer.PathGreyBoxFuzzer import PathGreyBoxFuzzer
 from runner.FunctionCoverageRunner import FunctionCoverageRunner
 from schedule.PathPowerSchedule import PathPowerSchedule
 from schedule.CoveragePowerSchedule import CoveragePowerSchedule
+from schedule.MyPathPowerSchedule import MyPathPowerSchedule
 from samples.Samples import sample1, sample2, sample3, sample4
 from utils.ObjectUtils import dump_object, load_object, get_md5_of_object
 from utils.Seed import Seed
@@ -40,9 +41,9 @@ class Result:
 if __name__ == "__main__":
     
     # change seed path here: 
-    f_runner = FunctionCoverageRunner(sample4)
-    init_path = "corpus/corpus_4"
-    init_seed_data = load_object("corpus/corpus_4")    
+    f_runner = FunctionCoverageRunner(sample3)
+    init_path = "corpus/corpus_3"
+    init_seed_data = load_object("corpus/corpus_3")    
 
     seeds_folder = os.path.join(SEED_DIRECTORY, init_path.split('/')[-1])
     if not os.path.exists(seeds_folder):
@@ -54,17 +55,19 @@ if __name__ == "__main__":
         hash_value = get_md5_of_object(obj=init_data)
         path = os.path.join(seeds_folder, hash_value + ".seed")
         dump_object(path=path, data=init_data)
+        # print(path)
         logger.info(f"Seed saved to {path}")
         seeds.append(Seed(data=init_data, _coverage=set(), path=path, directory=SEED_DIRECTORY))
 
-    grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(10), is_print=True,seed_directory=seeds_folder)
+    grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(10), is_print=True, seed_directory=seeds_folder)
     # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=CoveragePowerSchedule(), is_print=True, seed_directory=seeds_folder)
+    # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=MyPathPowerSchedule(10), is_print=True)
     start_time = time.time()
-    grey_fuzzer.runs(f_runner, run_time=30000)
+    grey_fuzzer.runs(f_runner, run_time=300)
     res = Result(grey_fuzzer.covered_line, set(grey_fuzzer.crash_map.values()), start_time, time.time())
     
     # 注意不要覆盖1-3的结果
-    dump_object("_result" + os.sep + "Sample-4-test.pkl", res)
-    print(load_object("_result" + os.sep + "Sample-4-test.pkl"))
+    dump_object("_result" + os.sep + "Sample-3.pkl", res)
+    print(load_object("_result" + os.sep + "Sample-3.pkl"))
     end_time = time.time()
     print(f'Finished with time: {end_time - start_time}')
