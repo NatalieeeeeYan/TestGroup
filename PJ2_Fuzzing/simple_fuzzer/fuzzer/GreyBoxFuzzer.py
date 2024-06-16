@@ -107,7 +107,7 @@ class GreyBoxFuzzer(Fuzzer):
         result, outcome = super().run(runner)
         if len(self.covered_line) != len(runner.all_coverage):
             self.new_coverage = runner.all_coverage - self.covered_line
-            print(self.new_coverage)
+            # print(self.new_coverage)
             self.covered_line |= runner.all_coverage
             if outcome == Runner.PASS:
                 # We have new coverage
@@ -119,6 +119,8 @@ class GreyBoxFuzzer(Fuzzer):
         if outcome == Runner.FAIL:
             uniq_crash_num = len(set(self.crash_map.values()))
             self.crash_map[self.inp] = result
+            # print(self.inp, result)
+            print(len(self.inp), result)
             if len(set(self.crash_map.values())) != uniq_crash_num:
                 self.last_crash_time = time.time()
 

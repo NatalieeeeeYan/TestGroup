@@ -61,8 +61,8 @@ class PathGreyBoxFuzzer(GreyBoxFuzzer):
 
         # if self.recent_discoveries:
             # path_id = get_path_id(self.s.coverage)
-        if path_id not in self.schedule.recent_discoveries:
-            self.schedule.recent_discoveries[path_id] = 0
-        self.schedule.recent_discoveries[path_id] += 1
+        # if path_id not in self.schedule.recent_discoveries:
+        #     self.schedule.recent_discoveries[path_id] = 0
+        # self.schedule.recent_discoveries[path_id] += 1
 
         return result, outcome

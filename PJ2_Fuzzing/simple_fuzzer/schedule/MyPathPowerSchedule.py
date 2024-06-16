@@ -32,7 +32,7 @@ class MyPathPowerSchedule(PowerSchedule):
         # print(self.recent_discoveries)
         total_discoveries = sum(self.recent_discoveries.values())
         for seed in population:
-            path_id = get_path_id(seed.coverage)
+            path_id = get_path_id(seed.load_coverage())
             freq = self.path_frequency[path_id]
             discovery_score = self.recent_discoveries.get(path_id, 0) / (total_discoveries + 1)
             # print(discovery_score)
