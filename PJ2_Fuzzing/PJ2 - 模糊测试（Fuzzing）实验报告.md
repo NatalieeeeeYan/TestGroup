@@ -7,11 +7,11 @@
 
 |  姓名  |    学号     |            工作内容             | 分工占比自评 |
 | :----: | :---------: | :-----------------------------: | :----------: |
-| 许博雅 |             |                                 |              |
-|  李博  | 21302010068 | 编写新的PowerSchedule，调整mutator尝试达到更多crash |              |
-| 黄秋瑞 | 21302010061 | 完成PathPowerSchedule、PathGreyBoxFuzzer |              |
-| 钟思祺 | 21302010069 | 修改mutator策略，尝试达到更高的crash和covered line |              |
-| 宋文彦 | 21302010062 | 完成Seed磁盘持久化，debug |              |
+| 许博雅 | 21302010066  |   编写6个基本和附加mutators   |             20% |
+|  李博  | 21302010068 | 编写新的PowerSchedule，调整mutator尝试达到更多crash |     20%         |
+| 黄秋瑞 | 21302010061 | 完成PathPowerSchedule、PathGreyBoxFuzzer |         20%     |
+| 钟思祺 | 21302010069 | 修改mutator策略，尝试达到更高的crash和covered line |      20%        |
+| 宋文彦 | 21302010062 | 完成Seed磁盘持久化，debug |    20%          |
 
 ##### 内容：
 
