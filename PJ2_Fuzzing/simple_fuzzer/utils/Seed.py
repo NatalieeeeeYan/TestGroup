@@ -17,6 +17,22 @@ log_level = logging.INFO
 logging.basicConfig(filename=log_path, filemode='a', format=log_format, level=log_level)
 logger = logging.getLogger(__name__)
 
+def save_seed(data: str, coverage: str, path: str=None, seed_dir: str='./seeds'):
+    '''
+    @params: data: input data
+    @params: coverage: input coverage
+    @params: path: path to save input
+    @params: seed_dir: path of saving folder
+    
+    @desc: save input into files
+    '''
+    pass
+    save_path = os.path.join(seed_dir, path)
+    dump_object(save_path, {
+        'data': data,
+        'coverage': coverage
+    })
+    logger.info(f"Seed saved to {save_path}")
 
 class Seed:
     """Represent an input with additional attributes"""

@@ -11,7 +11,8 @@ from utils.Mutator import Mutator
 from runner.FunctionCoverageRunner import FunctionCoverageRunner
 from schedule.PowerSchedule import PowerSchedule
 
-from utils.Seed import Seed
+from utils.Seed import Seed, save_seed
+from utils.ObjectUtils import get_md5_of_object
 
 import logging
 
@@ -119,9 +120,9 @@ class GreyBoxFuzzer(Fuzzer):
         if outcome == Runner.FAIL:
             uniq_crash_num = len(set(self.crash_map.values()))
             self.crash_map[self.inp] = result
-            # print(self.inp, result)
-            print(len(self.inp), result)
             if len(set(self.crash_map.values())) != uniq_crash_num:
                 self.last_crash_time = time.time()
-
+            input_hash_id = get_md5_of_object(obj=self.inp)
+            save_seed(data=self.inp, coverage=runner.coverage(), path=str(input_hash_id), seed_dir=self.seed_directory)
+        
         return result, outcome

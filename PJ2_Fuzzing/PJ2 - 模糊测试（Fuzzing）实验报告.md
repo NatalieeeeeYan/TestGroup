@@ -7,34 +7,13 @@
 
 |  姓名  |    学号     |            工作内容             | 分工占比自评 |
 | :----: | :---------: | :-----------------------------: | :----------: |
-| 许博雅 |             |                                 |              |
+| 许博雅 | 21302010066 | 实现mutator策略 |              |
 |  李博  | 21302010068 | 编写新的PowerSchedule，调整mutator尝试达到更多crash |              |
 | 黄秋瑞 | 21302010061 | 完成PathPowerSchedule、PathGreyBoxFuzzer |              |
 | 钟思祺 | 21302010069 | 修改mutator策略，尝试达到更高的crash和covered line |              |
 | 宋文彦 | 21302010062 | 完成Seed磁盘持久化，debug |              |
 
-##### 内容：
-
-1. 完善 6 个基本 mutators：【xby】
-   - insert_random_character
-   - flip_random_bits
-   - arithmetic_random_bytes
-   - interesting_random_bytes
-   - havoc_random_insert
-   - havoc_random_replace
-   - 编写 1 个附加 mutator
-2. 完善原有 PathPowerSchedule【hqr & lb】
-   - 编写 1 个新的 PowerSchedule
-3. 完善 PathGreyBoxFuzzer【hqr & lb】
-4. 调整代码 完成测试【zsq & swy】
-
-ddl：1-3 6/1之前，4 6/16之前
-
-
-
 ## 二、Mutator
-
-`在本章中，阐述你新增的 Mutator 的代码以及实现思路，以下为示例`
 
 1. delete_random_bytes
 
@@ -107,8 +86,6 @@ ddl：1-3 6/1之前，4 6/16之前
 
 ## 三、Schedule
 
-`在本章中，你需要阐述你新增编写的 Schedule 的实现思路,以下为示例`
-
 1. CoveragePowerSchedule
 
    ```python
@@ -130,12 +107,73 @@ ddl：1-3 6/1之前，4 6/16之前
 
 ## 四、新增功能实现介绍
 
-`介绍你们在实现将 input 动态存储本地的过程中的设计思路以及实现效果`
+1. Seeds 持久化
+
+   主要思路：将所有 input 都以文件形式保存在`./seeds` 文件夹下。对所有 PASS 的 input，在 `Seed` 对象中记录该 `seed` 的存储路径（内存中仍然维护 `seed` 和 `energy` 的映射，`seed` 对象本身体量减小，减少内存负担）。在需要使用时（`scheduler` 选择好 `seed` 后）读取对应文件中的数据，对 `seed.data` 和 `seed.coverage` 分别提供获取接口。
+
+   代码修改：在 `Seed.py` 中新增了 `seed.load_data()`、`seed.load_coverage()` 和 `seed.store()` 方法，用于读取和存储 `seed` 对应的数据、覆盖路径。新增了 `save_seed()` 用于保存所有inputs。
+
+   `Seed` 类中的保存函数：
+
+   ```python
+   class Seed: 
+       def save(self, data: str, coverage: Set[Location], directory: str = './seeds') -> None:
+           '''
+           @params: data: data of this seed
+           @params: coverage: coverage of this seed
+           @params: directory: directory of seeds storage
+   
+           @desc: Save seed data & coverage to disk. 
+           '''
+           dump_object(self.path, {
+               'data': data,
+               'coverage': coverage
+           })
+           logger.info(f"Seed saved to {self.path}")
+   
+       def load_data(self) -> str:
+           '''
+           @desc: Load seed data from disk. 
+           '''
+           if not os.path.exists(self.path):
+               logger.warning("Seed path is not set. Nothing to load.")
+               raise(FileNotFoundError(f"Seed file not found: {self.path}"))
+               return None
+           seed = load_object(self.path)
+           data = seed['data']
+           # coverage = seed['coverage']
+           logger.info(f"Seed data loaded from {self.path}")
+           return data
+   
+       def load_coverage(self) -> str:
+           '''
+           @desc: Load seed coverage from disk. 
+           '''
+           if not os.path.exists(self.path):
+               logger.warning("Seed path is not set. Nothing to load.")
+               raise(FileNotFoundError(f"Seed file not found: {self.path}"))
+               return None
+           seed = load_object(self.path)
+           # data = seed['data']
+           coverage = seed['coverage']
+           logger.info(f"Seed coverage loaded from {self.path}")
+           return coverage
+   ```
+
+   保存 FAIL input 的函数：
+
+   ```python
+   def save_seed(data: str, coverage: str, path: str=None, seed_dir: str='./seeds'):
+       pass
+       save_path = os.path.join(seed_dir, path)
+       dump_object(save_path, {
+           'data': data,
+           'coverage': coverage
+       })
+       logger.info(f"Seed saved to {save_path}")
+   ```
+
+   
 
 ## 五、其他功能
 
-### 4.1 Seeds 持久化
-
-主要思路：将所有 input 都以文件形式保存在`./seeds` 文件夹下。对所有 PASS 的 input，在 `Seed` 对象中记录该 `seed` 的存储路径（内存中仍然维护 `seed` 和 `energy` 的映射，`seed` 对象本身体量减小，减少内存负担）。在需要使用时（`scheduler` 选择好 `seed` 后）读取对应文件中的数据，对 `seed.data` 和 `seed.coverage` 分别提供获取接口。
-
-代码修改：在 `Seed.py` 中新增了 `seed.load_data()`、`seed.load_coverage()` 和 `seed.store()` 方法，用于读取和存储 `seed` 对应的数据、覆盖路径。新增了 `save_seed()` 用于保存所有inputs。
