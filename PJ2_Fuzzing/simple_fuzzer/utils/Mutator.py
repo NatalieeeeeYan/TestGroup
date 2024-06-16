@@ -6,6 +6,8 @@ import re
 # xby 注解：看起来seed里都是ascii的字符，所以bit操作需要先进行转换，而一个字符对应一个byte。
 # 127：DEL。但不知道为什么这里保留了这个范围。
 
+encode = ''
+
 def insert_random_character(s: str) -> str:
     """
     向 s 中下标为 pos 的位置插入一个随机 byte
@@ -179,7 +181,7 @@ def change_case(s: str) -> str:
 ################################################## 以下为html mutator ##########################################################
 
 def insert_random_html_tag(s: str) -> str:
-    html_tags = ["<div>", "</div>", "<span>", "</span>", "<p>", "</p>", "<a>", "</a>", "<script>", "</script>", "<style>", "</style>"]
+    html_tags = ["<div>", "\x00"]
     pos = random.randint(0, len(s))
     tag = random.choice(html_tags)
     return s[:pos] + tag + s[pos:]
@@ -219,12 +221,10 @@ def insert_random_javascript(s: str) -> str:
     return s[:pos] + js_code + s[pos:]
 
 def change_html_structure(s: str) -> str:
-    if len(s) < 2:
-        return s
     pos1, pos2 = sorted(random.sample(range(len(s)), 2))
     return s[:pos1] + s[pos2:] + s[pos1:pos2]
 
-def mutate_document_structure(s: str) -> str:
+def radical_mutate_document_structure(s: str) -> str:
     tags = re.findall(r'<[^>]+>', s)
     
     if not tags:
@@ -256,34 +256,56 @@ def mutate_document_structure(s: str) -> str:
         
     return s
 
-def truncate_randomly(s: str) -> str:
-    """随机截断字符串"""
-    if len(s) <= 1:
-        return s
-    trunc_pos = random.randint(1, len(s) - 1)
-    return s[:trunc_pos]
+# def insert_comment(s: str):
+#     # 对于< 符号，替换为<![
+#     fake_tags = ['<![', ' ', '>']
+#     tag = random.choice(fake_tags)
+#     # s = s.replace('<', tag)
+#     return '<![#H?-z_Ai1HX}Nv30C'
 
-def insert_xss_script_tag(html: str) -> str:
-    """
-    在 HTML 文本中随机位置插入包含恶意 JavaScript 的 <script> 标签
-    """
-    script_content = generate_malicious_script()
-    position = random.randint(0, len(html))
+# def insert_random_doctype(s: str) -> str:
+#     doctype = "<![VCTYPE html>"
+#     pos = random.randint(0, len(s))
     
-    # 插入 <script> 标签
-    mutated_html = html[:position] + f"<script>{script_content}</script>" + html[position:]
-    
-    return mutated_html
+#     return doctype
 
-def generate_malicious_script() -> str:
-    """
-    生成包含恶意 JavaScript 代码的字符串
-    """
-    # 这里可以编写恶意 JavaScript 代码，例如窃取 cookie 信息或者执行恶意操作
-    malicious_code = "alert('XSS attack!');"
+def addLbr(s:str) -> str:
+    if isinstance(s, bytes):
+        # 使用 chardet 检测字节对象的编码
+        detected_encoding = chardet.detect(s)['encoding']
+        print("addlb",detected_encoding)
+        if detected_encoding == 'gbk':
+            try:
+                s = s.decode(detected_encoding)
+                s = s.encode('GB2312')
+            except (UnicodeDecodeError, TypeError) as e:
+                raise ValueError(f"Failed to decode bytes: {e}")
+    result = []
+    for char in s:
+        result.append(char)
+        if char == '!':
+            result.append('[')
+    return ''.join(result)
     
-    return malicious_code
+import chardet
+def change_encode(s: str):
+    # 如果输入对象是字节对象（bytes），则先尝试解码为字符串
+    if isinstance(s, bytes):
+        # 使用 chardet 检测字节对象的编码
+        detected_encoding = chardet.detect(s)['encoding']
+        print(detected_encoding)
+        encode = detected_encoding
+        try:
+            s = s.decode(detected_encoding)
+        except (UnicodeDecodeError, TypeError) as e:
+            raise ValueError(f"Failed to decode bytes: {e}")
+    return s.encode('gbk')
 
+def my_insert(s: str) -> str:
+    pos = random.randint(0, len(s))
+    chars = ["<", ">", "<!"]
+    random_character = random.choice(chars)
+    return s[:pos] + random_character + s[pos:]
 
 class Mutator:
 
@@ -298,16 +320,17 @@ class Mutator:
             havoc_random_replace,
             delete_random_bytes,
             change_case,
-            mutate_document_structure, 
-            insert_random_html_tag,
-            delete_random_html_tag,
-            replace_random_html_tag,
-            insert_random_html_attribute,
-            insert_random_html_entity,
-            insert_random_javascript,
-            change_html_structure, 
-            truncate_randomly, 
-            insert_xss_script_tag
+            # radical_mutate_document_structure,
+            # insert_random_html_tag,
+            # delete_random_html_tag,
+            # replace_random_html_tag,
+            # insert_random_html_attribute,
+            # insert_random_html_entity,
+            # insert_random_javascript,
+            # change_html_structure,
+            # addLbr,
+            # change_encode,
+            my_insert,
         ]
 
     def mutate(self, inp: Any) -> Any:

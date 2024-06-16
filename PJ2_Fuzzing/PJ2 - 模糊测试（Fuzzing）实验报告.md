@@ -8,10 +8,10 @@
 |  姓名  |    学号     |            工作内容             | 分工占比自评 |
 | :----: | :---------: | :-----------------------------: | :----------: |
 | 许博雅 |             |                                 |              |
-|  李博  |             |                                 |              |
-| 黄秋瑞 |             |                                 |              |
+|  李博  | 21302010068 | 编写新的PowerSchedule，调整mutator尝试达到更多crash |              |
+| 黄秋瑞 | 21302010061 | 完成PathPowerSchedule、PathGreyBoxFuzzer |              |
 | 钟思祺 | 21302010069 | 修改mutator策略，尝试达到更高的crash和covered line |              |
-| 宋文彦 | 21302010062 | 完成Seed磁盘持久化，全流程debug |              |
+| 宋文彦 | 21302010062 | 完成Seed磁盘持久化，debug |              |
 
 ##### 内容：
 
@@ -109,17 +109,24 @@ ddl：1-3 6/1之前，4 6/16之前
 
 `在本章中，你需要阐述你新增编写的 Schedule 的实现思路,以下为示例`
 
-1. LevelPowerSchedule
+1. CoveragePowerSchedule
 
    ```python
-   class LevelPowerSchedule(Schedule):
+   class CoveragePowerSchedule(Schedule):
    
-       def assign_energy(self, population: Sequence[Seed]) -> None:
-           ...
+       def assign_energy(self, population: List[Seed]) -> None:
+        for seed in population:
+            novelty_score = self.novelty_scores.get(get_path_id(seed.load_coverage()), 0) 
+            if novelty_score == 0:
+                freq = self.path_frequency[get_path_id(seed.load_coverage())]
+                novelty_score = 1 / freq
+            seed.energy = novelty_score
    
    ```
 
-   实现思路：基于种子变异的层级...
+   实现思路：为覆盖到新路径的种子分配更高的能量。
+   在Fuzzer中获取每次新覆盖的路径，并将其出现次数记录在schedule的novelty_scores中：该新路径首次出现则赋值为1，多次出现则值++。分配种子能量时使用novelty_score代替path_frequency，对于新路径分配更高的能量，非新路径则使用频率的倒数，从而鼓励在新覆盖到的路径上进行探索。
+   
 
 ## 四、新增功能实现介绍
 
@@ -129,6 +136,6 @@ ddl：1-3 6/1之前，4 6/16之前
 
 ### 4.1 Seeds 持久化
 
-核心思路：懒加载，在 `Seed` 对象中记录该 `seed` 的存储路径，当且仅当在需要使用seed（data/coverage）时才读取文件中的数据，对 `seed.data` 和 `seed.coverage` 分别提供获取接口。
+主要思路：将所有 input 都以文件形式保存在`./seeds` 文件夹下。对所有 PASS 的 input，在 `Seed` 对象中记录该 `seed` 的存储路径（内存中仍然维护 `seed` 和 `energy` 的映射，`seed` 对象本身体量减小，减少内存负担）。在需要使用时（`scheduler` 选择好 `seed` 后）读取对应文件中的数据，对 `seed.data` 和 `seed.coverage` 分别提供获取接口。
 
-代码修改：在 `Seed.py` 中新增了 `seed.load_data()`、`seed.load_coverage()` 和 `seed.store()` 方法，用于读取和存储 `seed` 对应的数据、覆盖路径。
+代码修改：在 `Seed.py` 中新增了 `seed.load_data()`、`seed.load_coverage()` 和 `seed.store()` 方法，用于读取和存储 `seed` 对应的数据、覆盖路径。新增了 `save_seed()` 用于保存所有inputs。

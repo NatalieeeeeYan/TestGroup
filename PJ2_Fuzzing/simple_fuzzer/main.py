@@ -54,13 +54,15 @@ if __name__ == "__main__":
         hash_value = get_md5_of_object(obj=init_data)
         path = os.path.join(seeds_folder, hash_value + ".seed")
         dump_object(path=path, data=init_data)
+        # print(path)
         logger.info(f"Seed saved to {path}")
         seeds.append(Seed(data=init_data, _coverage=set(), path=path, directory=SEED_DIRECTORY))
 
-    # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(8), is_print=True)
-    grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=CoveragePowerSchedule(), is_print=True, seed_directory=seeds_folder)
+    grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(10), is_print=True, seed_directory=seeds_folder)
+    # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=CoveragePowerSchedule(), is_print=True, seed_directory=seeds_folder)
+    # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=MyPathPowerSchedule(10), is_print=True)
     start_time = time.time()
-    grey_fuzzer.runs(f_runner, run_time=600)
+    grey_fuzzer.runs(f_runner, run_time=30000)
     res = Result(grey_fuzzer.covered_line, set(grey_fuzzer.crash_map.values()), start_time, time.time())
     
     # 注意不要覆盖1-3的结果

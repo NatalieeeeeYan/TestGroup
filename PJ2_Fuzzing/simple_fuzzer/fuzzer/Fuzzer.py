@@ -31,6 +31,7 @@ class Fuzzer:
         if time.time() - self.last_print_time > 1:
             self.print_stats()
             self.last_print_time = time.time()
+        # print("res",res)
         return res
 
     def runs(self, runner: Runner = Runner(), run_time: int = 60) \
