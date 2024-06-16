@@ -5,7 +5,6 @@ from fuzzer.PathGreyBoxFuzzer import PathGreyBoxFuzzer
 from runner.FunctionCoverageRunner import FunctionCoverageRunner
 from schedule.PathPowerSchedule import PathPowerSchedule
 from schedule.CoveragePowerSchedule import CoveragePowerSchedule
-from schedule.MyPathPowerSchedule import MyPathPowerSchedule
 from samples.Samples import sample1, sample2, sample3, sample4
 from utils.ObjectUtils import dump_object, load_object, get_md5_of_object
 from utils.Seed import Seed

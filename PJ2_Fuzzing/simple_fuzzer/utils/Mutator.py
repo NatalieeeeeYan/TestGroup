@@ -25,16 +25,23 @@ def flip_random_bits(s: str) -> str:
     从 s 中随机挑选一个 bit，将其与其后面 N - 1 位翻转（翻转即 0 -> 1; 1 -> 0）
     注意：不要越界
     """
-    if s == "":
+    if not s:
         return insert_random_character(s)
+    
+    def bit_flip(buffer: str, bit_pos: int) -> str:
+        byte_index = bit_pos // 8
+        bit_index = bit_pos % 8
+        flipped_byte = chr(ord(buffer[byte_index]) ^ (1 << (7 - bit_index)))
+        return buffer[:byte_index] + flipped_byte + buffer[byte_index + 1:]
 
-    def FLIP_BITS(buf: str, index: int) -> str:
-        return buf[:(index >> 3)] + chr(ord(buf[index >> 3]) ^ (128 >> (index & 7))) + buf[(index >> 3) + 1:]
+    bit_lengths = [1, 2, 4]
+    flip_length = random.choice(bit_lengths)
+    max_bit_pos = len(s) * 8 - flip_length
+    start_bit = random.randint(0, max_bit_pos)
 
-    N = random.choice([1, 2, 4])
-    pos = random.randint(0, len(s) * 8 - N)
-    for i in range(N):
-        s = FLIP_BITS(s, pos + i)
+    for bit in range(start_bit, start_bit + flip_length):
+        s = bit_flip(s, bit)
+    
     return s
 
 
@@ -48,22 +55,22 @@ def arithmetic_random_bytes(s: str) -> str:
     从 s 中随机挑选一个 byte，将其与其后面 N - 1 个 bytes 进行字节随机增减
     注意：不要越界；如果出现单个字节在添加随机数之后，可以通过取模操作使该字节落在 [0, 255] 之间
     """
-    if s == "":
+    if not s:
         return insert_random_character(s)
 
-    max_pow = min(math.floor(math.log2(len(s))), 2)
-    p = random.randint(0, max_pow)
-    N = pow(2, p)
+    max_power = min(math.floor(math.log2(len(s))), 2)
+    power_choice = random.randint(0, max_power)
+    byte_count = 2 ** power_choice
 
-    def ARITH_BYTES(buf: str, index: int) -> str:
-        num = ord(buf[index])
-        rand = random.choice([-1, 1]) * random.randint(1, 35)
-        num = (num + rand + 256) % 256
-        return buf[:index] + chr(num) + buf[index + 1:]
+    def mutate_byte(data: str, pos: int) -> str:
+        original_byte_value = ord(data[pos])
+        random_adjustment = random.choice([-1, 1]) * random.randint(1, 35)
+        new_byte_value = (original_byte_value + random_adjustment + 256) % 256
+        return data[:pos] + chr(new_byte_value) + data[pos + 1:]
 
-    pos = random.randint(0, len(s) - N)
-    for i in range(N):
-        s = ARITH_BYTES(s, pos + i)
+    start_pos = random.randint(0, len(s) - byte_count)
+    for offset in range(byte_count):
+        s = mutate_byte(s, start_pos + offset)
     return s
 
 
@@ -75,33 +82,33 @@ def interesting_random_bytes(s: str) -> str:
         2. 随机挑选 s 中相邻连续的 1, 2, 4 bytes，将其替换为相应 interesting_value 数组中的随机元素；
     注意：不要越界
     """
-    if s == "":
+    if not s:
         return insert_random_character(s)
 
-    INTERESTING8 = [-128, -1, 16, 32, 64, 100, 127]
-    INTERESTING16 = [-32768, -129, 128, 255, 256, 512, 1000, 1024, 4096, 32767] + INTERESTING8
-    INTERESTING32 = [-2147483648, -100663046, -32769, 32768, 65535, 65536, 100663045, 2147483647] + INTERESTING16
+    interesting_values_8bit = [-128, -1, 16, 32, 64, 100, 127]
+    interesting_values_16bit = [-32768, -129, 128, 255, 256, 512, 1000, 1024, 4096, 32767] + interesting_values_8bit
+    interesting_values_32bit = [-2147483648, -100663046, -32769, 32768, 65535, 65536, 100663045, 2147483647] + interesting_values_16bit
 
     max_pow = min(math.floor(math.log2(len(s))), 2)
-    p = random.randint(0, max_pow)
-    N = pow(2, p)
+    power_choice = random.randint(0, max_pow)
+    num_bytes = 2 ** power_choice
 
-    def INTERESTING_BYTES(buf: str, index: int, N: int) -> str:
-        if N == 1:
-            interesting_value = random.choice(INTERESTING8)
-            bytes_data = struct.pack('b', interesting_value)
-            return buf[:index] + str(bytes_data) + buf[index + 1:]
-        if N == 2:
-            interesting_value = random.choice(INTERESTING16)
-            bytes_data = struct.pack('>h', interesting_value)
-            return buf[:index] + str(bytes_data) + buf[index + 2:]
-        if N == 4:
-            interesting_value = random.choice(INTERESTING32)
-            bytes_data = struct.pack('>i', interesting_value)
-            return buf[:index] + str(bytes_data) + buf[index + 4:]
+    def apply_interesting_value(buffer: str, position: int, num_bytes: int) -> str:
+        if num_bytes == 1:
+            value = random.choice(interesting_values_8bit)
+            byte_data = struct.pack('b', value)
+            return buffer[:position] + byte_data.decode(errors='ignore') + buffer[position + 1:]
+        elif num_bytes == 2:
+            value = random.choice(interesting_values_16bit)
+            byte_data = struct.pack('>h', value)
+            return buffer[:position] + byte_data.decode(errors='ignore') + buffer[position + 2:]
+        elif num_bytes == 4:
+            value = random.choice(interesting_values_32bit)
+            byte_data = struct.pack('>i', value)
+            return buffer[:position] + byte_data.decode(errors='ignore') + buffer[position + 4:]
 
-    pos = random.randint(0, len(s) - N)
-    s = INTERESTING_BYTES(s, pos, N)
+    start_position = random.randint(0, len(s) - num_bytes)
+    s = apply_interesting_value(s, start_position, num_bytes)
     return s
 
 def havoc_random_insert(s: str):
