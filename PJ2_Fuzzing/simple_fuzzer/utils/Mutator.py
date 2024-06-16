@@ -252,19 +252,6 @@ def radical_mutate_document_structure(s: str) -> str:
         
     return s
 
-# def insert_comment(s: str):
-#     # 对于< 符号，替换为<![
-#     fake_tags = ['<![', ' ', '>']
-#     tag = random.choice(fake_tags)
-#     # s = s.replace('<', tag)
-#     return '<![#H?-z_Ai1HX}Nv30C'
-
-# def insert_random_doctype(s: str) -> str:
-#     doctype = "<![VCTYPE html>"
-#     pos = random.randint(0, len(s))
-    
-#     return doctype
-
 def addLbr(s:str) -> str:
     if isinstance(s, bytes):
         # 使用 chardet 检测字节对象的编码
