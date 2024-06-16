@@ -57,10 +57,10 @@ if __name__ == "__main__":
         logger.info(f"Seed saved to {path}")
         seeds.append(Seed(data=init_data, _coverage=set(), path=path, directory=SEED_DIRECTORY))
 
-    # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(8), is_print=True)
-    grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=CoveragePowerSchedule(), is_print=True, seed_directory=seeds_folder)
+    grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=PathPowerSchedule(10), is_print=True,seed_directory=seeds_folder)
+    # grey_fuzzer = PathGreyBoxFuzzer(seeds=seeds, schedule=CoveragePowerSchedule(), is_print=True, seed_directory=seeds_folder)
     start_time = time.time()
-    grey_fuzzer.runs(f_runner, run_time=600)
+    grey_fuzzer.runs(f_runner, run_time=30000)
     res = Result(grey_fuzzer.covered_line, set(grey_fuzzer.crash_map.values()), start_time, time.time())
     
     # 注意不要覆盖1-3的结果

@@ -22,7 +22,7 @@ class CoveragePowerSchedule(PowerSchedule):
     def assign_energy(self, population: List[Seed]) -> None:
         """Assign higher energy to seeds that cover more lines of code"""
         # for seed in population:
-        #     seed.energy = len(seed.coverage)
+        #     seed.energy = len(seed.load_coverage())
         for seed in population:
             # FIXME: load seed coverage
             novelty_score = self.novelty_scores.get(get_path_id(seed.load_coverage()), 0) 

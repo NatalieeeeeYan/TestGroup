@@ -76,7 +76,7 @@ def interesting_random_bytes(s: str) -> str:
     if s == "":
         return insert_random_character(s)
 
-    INTERESTING8 = [-128, -1, 16, 32, 64, 100, 127]
+    INTERESTING8 = [-128, -1, 16, 32, 60, 62, 64, 100, 127]
     INTERESTING16 = [-32768, -129, 128, 255, 256, 512, 1000, 1024, 4096, 32767] + INTERESTING8
     INTERESTING32 = [-2147483648, -100663046, -32769, 32768, 65535, 65536, 100663045, 2147483647] + INTERESTING16
 
@@ -151,101 +151,46 @@ def delete_random_bytes(s: str, min_length: int = 10) -> str:
             return s_after_delete
     return s 
 
+    
+def insert_comment(s: str):
+    # 对于< 符号，替换为<![
+    fake_tags = ['<![', ' ', '>']
+    tag = random.choice(fake_tags)
+    # s = s.replace('<', tag)
+    return '<![#H?-z_Ai1HX}Nv30C'
 
-def change_case(s: str) -> str:
-    """
-    随机选取 N 字节（N = 1, 2, 4），将该位置的字符转换为大写或小写
-    """
-    N = random.choice([1, 2, 4])
-    if len(s) - N > 0:
-        pos = random.randint(0, len(s) - N)
-    else:
-        pos = 0
-    index = min(N, len(s))
-    for i in range(index):
-        # print(pos+i, len(s))
-        char = s[pos + i]
-        if char.isalpha():  # 检查字符是否是字母字符
-            s = s[:pos + i] + char.swapcase() + s[pos + i + 1:]
+def insert_random_doctype(s: str) -> str:
+    doctype = "<![VCTYPE html>"
+    pos = random.randint(0, len(s))
+    
+    return doctype
+
+# Insert random noise
+def insert_random_noise(s: str) -> str:
+    noise_length = random.randint(1, 10)
+    
+    noise = ''.join([chr(random.randint(0x10000, 0x10FFFF)) for _ in range(noise_length)])
+    pos = random.randint(0, len(s))
+    return s[:pos] + noise + s[pos:]
+
+def replace_random(s:str) ->str:
+    # 随机加< > /  <! 等
+    for i in range(1, 3):
+        # s = insert_random_character(s)
+        pos = random.randint(0, len(s))
+        r = random.choice(['<', '>', '&', '/', '<!', ' <?'])
+        # 替换
+        s = s[:pos] + r + s[pos:]
     return s
 
-################################################## 以下为html mutator ##########################################################
 
-def insert_random_html_tag(s: str) -> str:
-    html_tags = ["<div>", "</div>", "<span>", "</span>", "<p>", "</p>", "<a>", "</a>", "<script>", "</script>", "<style>", "</style>"]
+# Replace with random noise
+def replace_with_random_noise(s: str) -> str:
+    noise_length = random.randint(1, 10)
+    noise = ''.join([chr(random.randint(0, 255)) for _ in range(noise_length)])
     pos = random.randint(0, len(s))
-    tag = random.choice(html_tags)
-    return s[:pos] + tag + s[pos:]
-
-def delete_random_html_tag(s: str) -> str:
-    html_tags = ["<div>", "</div>", "<span>", "</span>", "<p>", "</p>", "<a>", "</a>", "<script>", "</script>", "<style>", "</style>"]
-    for tag in html_tags:
-        start = s.find(tag)
-        if start != -1:
-            return s[:start] + s[start + len(tag):]
-    return s
-
-def replace_random_html_tag(s: str) -> str:
-    html_tags = ["<div>", "</div>", "<span>", "</span>", "<p>", "</p>", "<a>", "</a>", "<script>", "</script>", "<style>", "</style>"]
-    for existing_tag in html_tags:
-        if existing_tag in s:
-            new_tag = random.choice(html_tags)
-            return s.replace(existing_tag, new_tag, 1)
-    return s
-
-def insert_random_html_attribute(s: str) -> str:
-    html_attributes = ["id", "class", "href", "style", "src"]
-    pos = random.randint(0, len(s))
-    attribute = random.choice(html_attributes)
-    value = ''.join(random.choices('abcdefghijklmnopqrstuvwxyz', k=5))
-    return s[:pos] + f' {attribute}="{value}" ' + s[pos:]
-
-def insert_random_html_entity(s: str) -> str:
-    html_entities = ["&amp;", "&lt;", "&gt;", "&quot;", "&apos;"]
-    pos = random.randint(0, len(s))
-    entity = random.choice(html_entities)
-    return s[:pos] + entity + s[pos:]
-
-def insert_random_javascript(s: str) -> str:
-    js_code = "<script>console.log('test');</script>"
-    pos = random.randint(0, len(s))
-    return s[:pos] + js_code + s[pos:]
-
-def change_html_structure(s: str) -> str:
-    pos1, pos2 = sorted(random.sample(range(len(s)), 2))
-    return s[:pos1] + s[pos2:] + s[pos1:pos2]
-
-def radical_mutate_document_structure(s: str) -> str:
-    tags = re.findall(r'<[^>]+>', s)
-    
-    if not tags:
-        return s
-    
-    # 随机重排标签
-    if random.choice([True, False]):
-        random.shuffle(tags)
-        s = ''.join(tags)
-    
-    # 随机嵌套和复制标签
-    if random.choice([True, False]):
-        selected_tag = random.choice(tags)
-        times = random.randint(1, 3)  # 复制1到3次
-        insertion_point = random.randint(0, len(s))
-        s = s[:insertion_point] + (selected_tag * times) + s[insertion_point:]
-    
-    # 完全删除主要结构
-    if random.choice([True, False]):
-        for tag in ['<html>', '<head>', '<body>']:
-            s = s.replace(tag, '')  # 删除开标签
-            s = s.replace(tag.replace('<', '</'), '')  # 删除闭标签
-
-    # 随机插入无效标签和属性
-    if random.choice([True, False]):
-        fake_tags = ['<fake>', '<nonsense nonsense="true">']
-        insertion_point = random.randint(0, len(s))
-        s = s[:insertion_point] + random.choice(fake_tags) + s[insertion_point:]
-        
-    return s
+    end_pos = min(pos + noise_length, len(s))
+    return s[:pos] + noise + s[end_pos:]
 
 class Mutator:
 
@@ -258,21 +203,22 @@ class Mutator:
             interesting_random_bytes,
             havoc_random_insert,
             havoc_random_replace,
+            insert_random_noise,
+            replace_with_random_noise,
+            replace_random,
             delete_random_bytes,
-            change_case,
-            radical_mutate_document_structure
-            # insert_random_html_tag,
-            # delete_random_html_tag,
-            # replace_random_html_tag,
-            # insert_random_html_attribute,
-            # insert_random_html_entity,
-            # insert_random_javascript,
-            # change_html_structure
+            # insert_random_doctype,
+            # change_case,
         ]
 
     def mutate(self, inp: Any) -> Any:
-        mutator = random.choice(self.mutators)
-        # for _ in range(random.randint(1, 3)):  # 每次调用 1 到 3 个变异操作
-        #     mutator = random.choice(self.mutators)
-        #     inp = mutator(inp)
-        return mutator(inp)
+            mutator = random.choice(self.mutators)
+            # for _ in range(random.randint(1, 3)):  # 每次调用 1 到 3 个变异操作
+            #     mutator = random.choice(self.mutators)
+            #     inp = mutator(inp)
+            if self.index < 10000:
+                self.index += 1
+                print(self.index)
+                return mutator(inp)
+            return 1
+        

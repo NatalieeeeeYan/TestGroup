@@ -36,6 +36,7 @@ class FunctionCoverageRunner(Runner):
             outcome = self.PASS
         except Exception as exc:
             stack_trace = "".join(traceback.format_tb(exc.__traceback__))
+            print(stack_trace)
             result = hashlib.md5(stack_trace.encode()).hexdigest()
             outcome = self.FAIL
 
